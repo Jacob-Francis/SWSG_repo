@@ -1,14 +1,14 @@
 # Define the input data or parameters
-profiles = ['uniform']  #["jet", "uniform", "incline"]
+profiles = ['uniform', "jet", "uniform", "incline"]
 methods = ["one", "four"]
-epsilons = [0.05, 0.025] #, 0.0125, 0.00625, 0.003125]
+epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
 
 # Specify the available CUDA devices as resources
   # Two CUDA devices available
 
 rule all:
     resources:
-        cuda=0
+        cuda=2
     input:
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl", 
                method=methods, epsilon=epsilons, profile=profiles),
@@ -22,7 +22,7 @@ rule run_lloyd:
         profile="{profile}",
         d=1
     resources:
-        cuda=0  # Each job uses one CUDA device
+        cuda=1  # Each job uses one CUDA device
     shell:
         """
         python -c '
@@ -42,7 +42,7 @@ rule run_simulation:
         profile="{profile}",
         d=1
     resources:
-        cuda=0  # Each job uses one CUDA device
+        cuda=1  # Each job uses one CUDA device
     shell:
         """
         python -c '
