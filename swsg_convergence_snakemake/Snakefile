@@ -1,0 +1,69 @@
+# Define the input data or parameters
+profiles = ['uniform']  #["jet", "uniform", "incline"]
+methods = ["one", "four"]
+epsilons = [0.05, 0.025] #, 0.0125, 0.00625, 0.003125]
+
+# Specify the available CUDA devices as resources
+  # Two CUDA devices available
+
+rule all:
+    resources:
+        cuda=0
+    input:
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl", 
+               method=methods, epsilon=epsilons, profile=profiles),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl", 
+               method=methods, epsilon=epsilons, profile=profiles)
+
+rule run_lloyd:
+    output:
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
+    params:
+        profile="{profile}",
+        d=1
+    resources:
+        cuda=0  # Each job uses one CUDA device
+    shell:
+        """
+        python -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
+sim.generate_case({wildcards.epsilon}, output_dir="data_store")
+'> {wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.epsilon}{wildcards.profile}.err
+        """
+
+rule run_simulation:
+    input:
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
+    output:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl"
+    params:
+        profile="{profile}",
+        d=1
+    resources:
+        cuda=0  # Each job uses one CUDA device
+    shell:
+        """
+        python -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
+sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
+'> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+        """
+
+rule compute_errors:
+    input:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl"
+    output:
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
+    shell:
+        """
+        python -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation()
+sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", output_dir="data_store")
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+        """
