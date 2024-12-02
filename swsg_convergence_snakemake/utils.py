@@ -430,7 +430,8 @@ def swsg_class_generate(
     # torch.cuda.set_device(5)
     swsg_class.parameters(ε=epsilon, f=f, g=g)
     h_leb = torch.ones_like(X[:,0]) * d / len(X[:,0])
-    swsg_class.densities(source_points=G.detach().cpu(), target_points=X.detach().cpu(), source_density=mu.detach().cpu(), target_density=h_leb.detach().cpu())
+    sigma = torch.ones_like(G[:,0]) * d / len(G[:,0])
+    swsg_class.densities(source_points=G.detach().cpu(), target_points=X.detach().cpu(), source_density=sigma.detach().cpu(), target_density=h_leb.detach().cpu())
 
     # assert (swsg_class.β_t == mu).all()
     torch.cuda.empty_cache()
