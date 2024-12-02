@@ -53,9 +53,9 @@ class SWSGSimulation:
         h_true = result["h_true"]
         Y = result["Y"]
         X = result["X"]
-        
+        G = result["G"]
         X, Y, G, swsg_class, h_true = swsg_class_generate(
-            X, Y, G, h_true, self.device, self.dtype, epsilon=epsilon, d=self.d, profile_type=self.profile+'2D_lloyd', cuda=self.device.index, tol=self.tol
+            X, Y, G, h_true, self.device, self.dtype, epsilon=epsilon, d=self.d, cuda=self.device.index, tol=self.tol
         )
 
         tic = perf_counter_ns()
@@ -85,7 +85,7 @@ class SWSGSimulation:
             pickle.dump(result, f)
         print(f"Simulation results saved to {output_path}")
 
-    def compute_errors(self, method, epsilon, result_file, output_dir):
+    def compute_errors(self, method, epsilon, result_file, lloyd_file, output_dir):
         """Compute norms and Wasserstein distances using saved simulation results."""
         print(f"Computing errors for: {method}, ε={epsilon}")
 
@@ -94,11 +94,16 @@ class SWSGSimulation:
             result = pickle.load(f)
 
         h = result["h"]
-        h_true = result["h_true"]
         grad_phi = result["grad_phi"]
         debias_x_star = result["debias_x_star"]
+        
+        with open(lloyd_file, "rb") as f:
+            result = pickle.load(f)
+
+        h_true = result["h_true"]
         Y = result["Y"]
         X = result["X"]
+        G = result["G"]
 
         # Norm errors for h
         l1_h = torch.linalg.norm(h_true.view(-1, 1) - h, ord=1) / len(h_true) 

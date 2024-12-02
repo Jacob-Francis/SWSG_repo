@@ -1,7 +1,7 @@
 # Define the input data or parameters
-profiles = ['uniform']  #["jet", "uniform", "incline"]
+profiles = ["jet", "uniform", "incline"]
 methods = ["one", "four"]
-epsilons = [0.05, 0.025] #, 0.0125, 0.00625, 0.003125]
+epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
 
 # Specify the available CUDA devices as resources
   # Two CUDA devices available
@@ -25,7 +25,7 @@ rule run_lloyd:
         cuda=0  # Each job uses one CUDA device
     shell:
         """
-        python -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
@@ -45,7 +45,7 @@ rule run_simulation:
         cuda=0  # Each job uses one CUDA device
     shell:
         """
-        python -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
@@ -55,15 +55,17 @@ sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file
 
 rule compute_errors:
     input:
-        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl"
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
+
     output:
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
     shell:
         """
-        python -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation()
-sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", output_dir="data_store")
+sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
