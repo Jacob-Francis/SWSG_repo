@@ -3,6 +3,7 @@ import torch
 import pickle
 from utils import initialisation, swsg_solver, swsg_class_generate
 from time import perf_counter_ns
+from geomloss import SamplesLoss
 
 class SWSGSimulation:
     def __init__(self, cuda=None, profile="uniform", d=1, tol=1e-11):
@@ -144,6 +145,85 @@ class SWSGSimulation:
             error_data[key]["regular_mesh_error"] = dict(
                 l1=l1.item(), l2=l2.item(), linf=linf
             )
+
+        # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
+        error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_l_errors.pkl"
+        with open(error_path, "wb") as f:
+            pickle.dump(error_data, f)
+        print(f"Error data saved to {error_path}")
+    
+
+    def compute_W2_errors(self, method, epsilon, result_file, lloyd_file, l_errors, output_dir):
+        """Compute norms and Wasserstein distances using saved simulation results."""
+        print(f"Computing errors for: {method}, ε={epsilon}")
+
+        # Load saved simulation results
+        with open(result_file, "rb") as f:
+            result = pickle.load(f)
+
+        h = result["h"]
+        grad_phi = result["grad_phi"]
+        debias_x_star = result["debias_x_star"]
+        
+        with open(lloyd_file, "rb") as f:
+            result = pickle.load(f)
+
+        h_true = result["h_true"]
+        Y = result["Y"]
+        X = result["X"]
+        G = result["G"]
+
+        ############### Wasserstien Error ###############
+        # Generate the dense mesh with 250 000 points.
+        if '2D_lloyd' in self.profile:
+            X_dense, _, _, _, h_true_dense = initialisation(
+                epsilon=epsilon / 3, d=d, profile_type=profile.split('2D')[0], cuda=cuda
+            )
+            X_dense = X_dense.type(dtype)
+            h_true_dense = h_true_dense.type(dtype)
+        else:
+            X_dense, _, _, _, h_true_dense = initialisation(
+                epsilon=epsilon / 3, d=d, profile_type=profile, cuda=cuda
+            )
+            X_dense = X_dense.type(dtype)
+            h_true_dense = h_true_dense.type(dtype)
+        
+        N = len(X)
+        N_dense = len(X_dense)
+
+        _torch_numpy_process = lambda x : torch.tensor(x, stype=self.dtype, device=self.device) 
+
+        dense_weights = _torch_numpy_process(h_true_dense / N_dense)
+        dense_points=  _torch_numpy_process(X_dense)
+
+        uni_weights = _torch_numpy_process(torch.ones_like(h) / N)
+
+        # Load data;
+        with open(l_errors, "rb") as f:
+            method_data = pickle.load(f)
+
+        loss = SamplesLoss("sinkhorn", p=2, blur=np.sqrt(epsilon / 3), scaling=0.9999, backend='multiscale')
+        N = len(X)
+        N_dense = len(X_dense)
+
+        s = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(Y))
+        method_data["h_error"]["original"] = s.detach().cpu()
+        print('Oringal Se loss:', s)
+
+        s = loss(dense_weights, dense_points, _torch_numpy_process(h / N), _torch_numpy_process(X))
+        method_data["h_error"]["W_error"] = s.detach().cpu()
+        print("h error", s)
+
+        # REgular debiased
+        s = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(debias_x_star))
+        method_data["debias"]["W_error_regular"] = s.detach().cpu()
+        print("regular debiased", s)
+        
+        # Regular biased
+        s = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(grad_phi))
+        method_data["bias"]["W_error_regular"] = s.detach().cpu()
+
+        print("regular bias", s)
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors.pkl"

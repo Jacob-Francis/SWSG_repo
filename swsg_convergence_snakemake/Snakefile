@@ -53,13 +53,13 @@ sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file
 '> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
 
-rule compute_errors:
+rule compute_l_errors:
     input:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
 
     output:
-        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_l_errors.pkl"
     shell:
         """
         python3 -c '
@@ -67,5 +67,24 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation()
 sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+        """
+
+rule compute_w2_errors:
+    input:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_l_errors.pkl"
+    output:
+        allerrors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
+    resources:
+        cuda=2  # Each job uses one CUDA device
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
+sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store")
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
