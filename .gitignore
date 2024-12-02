@@ -93,3 +93,5 @@ dist/
 # Ignore miscellaneous
 *.lock
 node_modules/
+*.snakemake
+*.ssh
