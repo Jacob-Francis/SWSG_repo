@@ -30,7 +30,7 @@ rule run_lloyd:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda={resources.gpu}, profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
 sim.generate_case({wildcards.epsilon}, output_dir="data_store")
 '> {wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.epsilon}{wildcards.profile}.err
         """
