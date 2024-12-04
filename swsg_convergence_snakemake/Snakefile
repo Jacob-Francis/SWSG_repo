@@ -27,7 +27,7 @@ rule run_lloyd:
         gpu=3  # Each job uses one CUDA device
     shell:
         """
-        GPU_INDEX={config[gpus][int(resources.gpu) - 1]}
+        GPU_INDEX={config[gpus]}
         echo "Allocated GPU: $GPU_INDEX"
 #         CUDA_VISIBLE_DEVICES={config[gpus][int(resources.gpu)-1]} python3 -c '
 # from swsg_simulation_class import SWSGSimulation
