@@ -10,7 +10,7 @@ configfile: "config.yaml"
 
 rule all:
     resources:
-        cuda=4
+        gpu=4
     input:
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl", 
                method=methods, epsilon=epsilons, profile=profiles),
@@ -27,8 +27,7 @@ rule run_lloyd:
         gpu=3  # Each job uses one CUDA device
     shell:
         """
-        GPU_INDEX={config[gpus]}
-        echo "Allocated GPU: $GPU_INDEX"
+        echo "Allocated GPU: {config[gpus][int(resources.gpu-1)]}"
 #         CUDA_VISIBLE_DEVICES={config[gpus][int(resources.gpu)-1]} python3 -c '
 # from swsg_simulation_class import SWSGSimulation
 
