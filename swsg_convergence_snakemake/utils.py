@@ -25,7 +25,7 @@ def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
     """
     llody_loss = SamplesLoss('sinkhorn', p=2, blur=blur, scaling=0.99, backend='multiscale')
     err  = 1e3
-    kmax = 500
+    kmax = 100
     count = 0
 
     # Set up the tqdm progress bar
