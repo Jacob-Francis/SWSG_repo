@@ -27,7 +27,7 @@ rule run_lloyd:
         gpu=3  # Each job uses one CUDA device
     shell:
         """
-        CUDA_VISIBLE_DEVICES={config[gpus][resources.gpu-1]} python3 -c '
+        CUDA_VISIBLE_DEVICES={config[gpus][int(resources.gpu)-1]} python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
@@ -47,7 +47,7 @@ rule run_simulation:
         gpu=1  # Each job uses one CUDA device
     shell:
         """
-        CUDA_VISIBLE_DEVICES={config[gpus][resources.gpu-1]} python3 -c '
+        CUDA_VISIBLE_DEVICES={config[gpus]int(resources.gpu)-1]} python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
@@ -86,7 +86,7 @@ rule compute_w2_errors:
         d=1
     shell:
         """
-        CUDA_VISIBLE_DEVICES={config[gpus][resources.gpu-1]} python3 -c '
+        CUDA_VISIBLE_DEVICES={config[gpus][int(resources.gpu)-1]} python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
