@@ -8,7 +8,7 @@ epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
 
 rule all:
     resources:
-        cuda=2
+        cuda=4
     input:
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl", 
                method=methods, epsilon=epsilons, profile=profiles),
@@ -22,7 +22,7 @@ rule run_lloyd:
         profile="{profile}",
         d=1
     resources:
-        cuda=1  # Each job uses one CUDA device
+        cuda=3  # Each job uses one CUDA device
     shell:
         """
         python3 -c '
@@ -59,7 +59,7 @@ rule compute_l_errors:
         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
 
     output:
-        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_l_errors.pkl"
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl"
     shell:
         """
         python3 -c '
@@ -73,12 +73,15 @@ sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_fi
 rule compute_w2_errors:
     input:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
-        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
-        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_l_errors.pkl"
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl",
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl"
     output:
         allerrors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
     resources:
         cuda=2  # Each job uses one CUDA device
+    params:
+        profile="{profile}",
+        d=1
     shell:
         """
         python3 -c '

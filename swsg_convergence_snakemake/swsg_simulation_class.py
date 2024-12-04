@@ -4,6 +4,7 @@ import pickle
 from utils import initialisation, swsg_solver, swsg_class_generate
 from time import perf_counter_ns
 from geomloss import SamplesLoss
+import numpy as np
 
 class SWSGSimulation:
     def __init__(self, cuda=None, profile="uniform", d=1, tol=1e-11):
@@ -147,7 +148,7 @@ class SWSGSimulation:
             )
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_l_errors.pkl"
+        error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_lnormerrors.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(error_data, f)
         print(f"Error data saved to {error_path}")
@@ -175,23 +176,14 @@ class SWSGSimulation:
 
         ############### Wasserstien Error ###############
         # Generate the dense mesh with 250 000 points.
-        if '2D_lloyd' in self.profile:
-            X_dense, _, _, _, h_true_dense = initialisation(
-                epsilon=epsilon / 3, d=d, profile_type=profile.split('2D')[0], cuda=cuda
-            )
-            X_dense = X_dense.type(dtype)
-            h_true_dense = h_true_dense.type(dtype)
-        else:
-            X_dense, _, _, _, h_true_dense = initialisation(
-                epsilon=epsilon / 3, d=d, profile_type=profile, cuda=cuda
-            )
-            X_dense = X_dense.type(dtype)
-            h_true_dense = h_true_dense.type(dtype)
+        X_dense, _, _, h_true_dense = initialisation(
+            self.device, self.dtype, epsilon=epsilon/3, d=self.d, profile_type=self.profile, cuda=self.device.index, tol=self.tol
+        )
         
         N = len(X)
         N_dense = len(X_dense)
 
-        _torch_numpy_process = lambda x : torch.tensor(x, stype=self.dtype, device=self.device) 
+        _torch_numpy_process = lambda x : torch.tensor(x, dtype=torch.float64, device=self.device) 
 
         dense_weights = _torch_numpy_process(h_true_dense / N_dense)
         dense_points=  _torch_numpy_process(X_dense)
@@ -228,5 +220,5 @@ class SWSGSimulation:
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors.pkl"
         with open(error_path, "wb") as f:
-            pickle.dump(error_data, f)
+            pickle.dump(method_data, f)
         print(f"Error data saved to {error_path}")

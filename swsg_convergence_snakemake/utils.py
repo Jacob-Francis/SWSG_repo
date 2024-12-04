@@ -393,27 +393,27 @@ def initialisation(
         )
         G = torch.cartesian_prod(
             torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
-            torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
+            torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),s
         )
         h_true = d*torch.ones_like(X[:, 1]).view(-1, 1)
         mu = torch.ones_like(h_true) * d / len(X[:, 1])
     elif profile_type == "incline":
-        X, Y, G, h_true, mu = incline(epsilon, f=1.0, g=0.1, a=0.2, b=1.0, c=0.5, d=1.0)
+        X, Y, G, h_true, mu = incline(epsilon, f, g, a, b, c, d)
     elif profile_type == "incline_no_lloyd":
         X, Y, G, h_true, mu = incline_no_lloyd(
-            epsilon, f=1.0, g=0.1, a=0.2, b=1.0, c=0.5, d=1.0
+            epsilon, f, g, a, b, c, d
         )
     elif profile_type == "incline2D_lloyd":
         X, Y, G, h_true, mu = incline2D_lloyd(
-            device, dtype, epsilon, f=1.0, g=0.1, a=0.2, b=1.0, c=0.5, d=1.0, tol=tol
+            device, dtype,epsilon, f, g, a, b, c, d, tol=tol
         )
     elif profile_type == "jet2D_lloyd":
         X, Y, G, h_true, mu = jet2D_lloyd(
-            device, dtype, epsilon, f=1.0, g=0.1, a=0.2, b=1.0, c=0.5, d=1.0, tol=tol
+            device, dtype, epsilon, f, g, a, b, c, d, tol=tol
         )
     elif profile_type == "uniform2D_lloyd":
         X, Y, G, h_true, mu = uniform2D_lloyd(
-            device, dtype, epsilon, f=1.0, g=0.1, a=0.2, b=1.0, c=0.5, d=1.0, tol=tol
+            device, dtype, epsilon, f, g, a, b, c, d, tol=tol
         )
 
     return X, Y, G, h_true
