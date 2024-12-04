@@ -1,7 +1,7 @@
 # Define the input data or parameters
-profiles = ["jet", "uniform", "incline"]
+profiles = ["jet"]#, "uniform", "incline"]
 methods = ["one", "four"]
-epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
+epsilons = [0.05, 0.025] #, 0.0125, 0.00625, 0.003125]
 
 # Specify the available CUDA devices as resources
   # Two CUDA devices available
@@ -27,6 +27,7 @@ rule run_lloyd:
         gpu=3  # Each job uses one CUDA device
     shell:
         """
+        echo "Allocated GPU: {config[gpus][resources.gpu-1]}"
         CUDA_VISIBLE_DEVICES={config[gpus][int(resources.gpu)-1]} python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
