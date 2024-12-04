@@ -5,6 +5,8 @@ epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
 
 # Specify the available CUDA devices as resources
   # Two CUDA devices available
+configfile: "config.yaml"
+
 
 rule all:
     resources:
@@ -22,13 +24,13 @@ rule run_lloyd:
         profile="{profile}",
         d=1
     resources:
-        cuda=3  # Each job uses one CUDA device
+        gpu=3  # Each job uses one CUDA device
     shell:
         """
-        python3 -c '
+        CUDA_VISIBLE_DEVICES={config[gpus][resources.gpu-1]} python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
 sim.generate_case({wildcards.epsilon}, output_dir="data_store")
 '> {wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.epsilon}{wildcards.profile}.err
         """
@@ -42,13 +44,13 @@ rule run_simulation:
         profile="{profile}",
         d=1
     resources:
-        cuda=1  # Each job uses one CUDA device
+        gpu=1  # Each job uses one CUDA device
     shell:
         """
-        python3 -c '
+        CUDA_VISIBLE_DEVICES={config[gpus][resources.gpu-1]} python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
 sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
 '> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
@@ -78,16 +80,16 @@ rule compute_w2_errors:
     output:
         allerrors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
     resources:
-        cuda=2  # Each job uses one CUDA device
+        gpu=2  # Each job uses one CUDA device
     params:
         profile="{profile}",
         d=1
     shell:
         """
-        python3 -c '
+        CUDA_VISIBLE_DEVICES={config[gpus][resources.gpu-1]} python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda={resources.cuda}, profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
 sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store")
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
