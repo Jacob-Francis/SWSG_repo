@@ -10,11 +10,13 @@ configfile: "config.yaml"
 
 rule all:
     resources:
-        gpu=4
+        gpu=1
     input:
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl", 
                method=methods, epsilon=epsilons, profile=profiles),
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl", 
+               method=methods, epsilon=epsilons, profile=profiles),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_correctederrors.pkl", 
                method=methods, epsilon=epsilons, profile=profiles)
 
 rule run_lloyd:
@@ -24,7 +26,7 @@ rule run_lloyd:
         profile="{profile}",
         d=1
     resources:
-        gpu=1  # Each job uses one CUDA device
+        gpu=0  # Each job uses one CUDA device
     shell:
         """
         python3 -c '
@@ -44,7 +46,7 @@ rule run_simulation:
         profile="{profile}",
         d=1
     resources:
-        gpu=2  # Each job uses one CUDA device
+        gpu=0  # Each job uses one CUDA device
     shell:
         """
         python3 -c '
@@ -54,12 +56,33 @@ sim = SWSGSimulation(cuda={resources.gpu}, profile="{params.profile}", d={params
 sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
 '> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
+        
+rule run_dense_sym:
+    output:
+        dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+        b=10
+    resources:
+        gpu=0  # Each job uses one CUDA device
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda={resources.gpu}, profile="{params.profile}", d={params.d}, b={params.b})
+sim.compute_density_symmetric_potential(output_dir="data_store")
+'> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
+        """
 
 rule compute_l_errors:
     input:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
-
+    params:
+        profile="{profile}",
+        d=1
     output:
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl"
     shell:
@@ -67,7 +90,7 @@ rule compute_l_errors:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation()
+sim = SWSGSimulation(profile="{params.profile}", d={params.d})
 sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
@@ -76,11 +99,12 @@ rule compute_w2_errors:
     input:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl",
-        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl"
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl",
+        dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl"
     output:
         allerrors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
     resources:
-        gpu=3  # Each job uses one CUDA device
+        gpu=0  # Each job uses one CUDA device
     params:
         profile="{profile}",
         d=1

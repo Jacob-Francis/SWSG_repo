@@ -101,7 +101,7 @@ def incline2D_lloyd(device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=
     # Assigning uniform weighting to points - Lloyde type
     def height_func(x):
         return a * b * (x - c) + d
-    
+
     # Llody fit against dense sampling 
     Y = torch.rand((n1*n2, 2), device=device).type(dtype)*50 - 24  # Random box in [-4, 6]x[-4, 6] becuase I want solutions in [0, 1]x[0,1]
     Y = Y.requires_grad_(True)
@@ -131,7 +131,7 @@ def incline2D_lloyd(device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=
     G = Y.detach().clone()  
     G[:, 1] = G[:, 1] + f**-2 * g * a * b
    
-    h_true = alpha.view(-1, 1) # Not normalised to one
+    h_true = alpha.view(-1, 1) 
     mu = torch.ones_like(h_true) * d  / len(X[:, 1])
 
     return  X, Y, G, h_true, mu
@@ -182,7 +182,7 @@ def uniform2D_lloyd(device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=
 
 
 # pylint: disable=E1101
-def incline(epsilon, f=1.0, g=0.1, a=0.2, b=1.0, c=0.5, d=1.0):
+def incline(epsilon, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0):
     """
     Initialise a jet profile and associated object for solving the sWSG problem.
     """
@@ -556,47 +556,49 @@ def swsg_solver(swsg_class, method="three", lambert_tolerance=1e-12, tolerance=1
 
     return φ, ψ, φ_s, ψ_s, grad_phi, grad_phi_debias, error_list
 
+def compute_dense_symmetric_potential(X, α, Y, β, cuda='cuda:0', force_type='pykeops'):
+    """
+    Compute the dense symmetric potential when no precomputed potential is provided.
+    """
+    uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
+    uotclass.parameters(epsilon=0.002)
+    uotclass.densities(X, Y, α, β)
 
-def Sinkhorn_Divergence_balanced(X, α, Y, β, uotclass=None):
     tic = perf_counter_ns()
-    if uotclass is None:
-        # Initialise it
-        uotclass = DebiasedUOT(pykeops=True)
-        uotclass.parameters(epsilon=0.001)
-        uotclass.densities(X, Y, α, β)
+    f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
+        tol=1e-12,
+        verbose=False,
+        aprox="balanced",
+        convergence_repeats=3,
+        convergence_or_fail=True
+    )
+    toc = perf_counter_ns()
 
-        # solve the symmteric DENSE problem once
-        uotclass.debias_f = UnbalancedOT(
-            set_fail=uotclass.set_fail,
-            pykeops=uotclass.pykeops,
-            debias=False,
-            cuda_device=uotclass.device,
-        )
-        uotclass.debias_f.parameters(
-            uotclass.epsilon, uotclass.rho, uotclass.cost_const
-        )
-        uotclass.debias_f.densities(
-            uotclass.X_s, uotclass.X_s, uotclass.α_s, uotclass.α_s
-        )
+    d = uotclass.dual_cost(force_type=force_type)
 
-        f_update, g_update, i_sup = uotclass.debias_f.sinkhorn_algorithm(
-            tol=1e-12,
-            verbose=False,
-            aprox="balanced",
-            convergence_repeats=3,
-        )
+    print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
+    print(f"W2 Computed in {toc - tic} ns")
 
-        print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
-    else:
-        # Else update the densities
-        uotclass.densities(X, Y, α, β)
+    return dict(f=uotclass.g.cpu(), dual=sum(d))
 
-    # Run sinkhorn
+def compute_sinkhorn_divergence(X, α, Y, β, dense_symmetric_potential, cuda='cuda:0', force_type='pykeops'):
+    """
+    Compute the symmetric update using a precomputed potential.
+    """
+    uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
+    uotclass.parameters(epsilon=0.002)
+    uotclass.densities(X, Y, α, β)
+
+    # Run Sinkhorn
+    tic = perf_counter_ns()
     uotclass.sinkhorn_algorithm(
-        f0=torch.zeros_like(α), g0=torch.zeros_like(β), aprox="balanced", tol=1e-14
+        f0=dense_symmetric_potential['f'],
+        g0=torch.zeros_like(uotclass.β_t),
+        aprox="balanced",
+        tol=1e-14
     )
 
-    # solve the new symmetric potential problem
+    # Solve the new symmetric potential problem
     uotclass.debias_g = UnbalancedOT(
         set_fail=uotclass.set_fail,
         pykeops=uotclass.pykeops,
@@ -605,7 +607,6 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, uotclass=None):
     )
 
     uotclass.debias_g.parameters(uotclass.epsilon, uotclass.rho, uotclass.cost_const)
-
     uotclass.debias_g.densities(uotclass.Y_t, uotclass.Y_t, uotclass.β_t, uotclass.β_t)
 
     f_update, g_update, i_sup = uotclass.debias_g.sinkhorn_algorithm(
@@ -618,18 +619,157 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, uotclass=None):
     toc = perf_counter_ns()
 
     print("Symmetric update final convergence:", f_update, g_update, i_sup)
-    print(f"W2 Computed in {toc-tic} ns")
-    force_type = "pykeops"
+    print(f"W2 Computed in {toc - tic} ns")
 
     return (
-        sum(uotclass.primal_cost(force_type=force_type))
+        sum(uotclass.dual_cost(force_type=force_type))
         - (
-            sum(uotclass.debias_f.primal_cost(force_type=force_type))
-            + sum(uotclass.debias_g.primal_cost(force_type=force_type))
+            dense_symmetric_potential['dual']
+            + sum(uotclass.debias_g.dual_cost(force_type=force_type))
         )
         / 2
         + uotclass.epsilon * (uotclass.α_s.sum() - uotclass.β_t.sum()) ** 2 / 2
-    ).cpu().item(), uotclass
+    ).cpu().item()
+
+###################################
+def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0=None, g0=None, force_type='pykeops', tol=1e-12):
+    '''
+    # Run OT(a, b) on grid X, Y reusing the dense symmeric potential and cost
+    # dense_symmetric_potential = dict(f=g, uot(dense, dense))
+    # a,X has to be dense
+    '''
+    cuda = X.device
+    uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
+    uotclass.parameters(epsilon=0.002)
+    uotclass.densities(X, Y, α, β)
+
+    tic = perf_counter_ns()
+    if dense_symmetric_potential is None:
+
+        f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
+            tol=tol,
+            verbose=False,
+            aprox="balanced",
+            convergence_repeats=3,
+            converge_or_fail=True
+        )
+        
+        d = uotclass.dual_cost(force_type=force_type)
+        
+        print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
+        return dict(f=uotclass.g.cpu(), dual=sum(d))
+    else:
+
+        # Run sinkhorn
+        f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
+            f0=f0, g0=g0, aprox="balanced", tol=tol
+        )
+        
+        print("Sinkhorn update final convergence:", f_update, g_update, i_sup)
+
+
+        # solve the new symmetric potential problem
+        uotclass.debias_g = UnbalancedOT(
+            set_fail=uotclass.set_fail,
+            pykeops=uotclass.pykeops,
+            debias=False,
+            cuda_device=uotclass.device,
+        )
+
+        uotclass.debias_g.parameters(uotclass.epsilon, uotclass.rho, uotclass.cost_const)
+
+        uotclass.debias_g.densities(uotclass.Y_t, uotclass.Y_t, uotclass.β_t, uotclass.β_t)
+
+        f_update, g_update, i_sup = uotclass.debias_g.sinkhorn_algorithm(
+            tol=tol,
+            verbose=False,
+            left_divergence=uotclass.right_div.print_type(),
+            right_divergence=uotclass.right_div.print_type(),
+            convergence_repeats=3,
+        )
+        toc = perf_counter_ns()
+
+        print("Symmetric update final convergence:", f_update, g_update, i_sup)
+        print(f"W2 Computed in {toc-tic} ns")
+
+        return (
+            sum(uotclass.dual_cost(force_type=force_type))
+            - (
+                dense_symmetric_potential['dual'].to(uotclass.device)
+                + sum(uotclass.debias_g.dual_cost(force_type=force_type))
+            )
+            / 2
+            + uotclass.epsilon * (uotclass.α_s.sum() - uotclass.β_t.sum()) ** 2 / 2
+        ).cpu().item(), uotclass
+
+
+###################################
+# def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None, cuda='cuda:0', force_type='pykeops'):
+#     '''
+#     # Run OT(a, b) on grid X, Y reusing the dense symmeric potential and cost
+#     # dense_symmetric_potential = dict(f=g, uot(dense, dense))
+#     # a,X has to be dense
+#     '''
+    
+#     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
+#     uotclass.parameters(epsilon=0.002)
+#     uotclass.densities(X, Y, α, β)
+
+#     tic = perf_counter_ns()
+#     if dense_symmetric_potential is None:
+
+#         f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
+#             tol=1e-12,
+#             verbose=False,
+#             aprox="balanced",
+#             convergence_repeats=3,
+#             converge_or_fail=True
+#         )
+        
+#         d = uotclass.dual_cost(force_type=force_type)
+        
+#         print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
+#         return dict(f=uotclass.g.cpu(), dual=sum(d))
+#     else:
+
+#         # Run sinkhorn
+#         uotclass.sinkhorn_algorithm(
+#             f0=dense_symmetric_potential['f'], g0=torch.zeros_like(β), aprox="balanced", tol=1e-14
+#         )
+
+#         # solve the new symmetric potential problem
+#         uotclass.debias_g = UnbalancedOT(
+#             set_fail=uotclass.set_fail,
+#             pykeops=uotclass.pykeops,
+#             debias=False,
+#             cuda_device=uotclass.device,
+#         )
+
+#         uotclass.debias_g.parameters(uotclass.epsilon, uotclass.rho, uotclass.cost_const)
+
+#         uotclass.debias_g.densities(uotclass.Y_t, uotclass.Y_t, uotclass.β_t, uotclass.β_t)
+
+#         f_update, g_update, i_sup = uotclass.debias_g.sinkhorn_algorithm(
+#             tol=1e-12,
+#             verbose=False,
+#             left_divergence=uotclass.right_div.print_type(),
+#             right_divergence=uotclass.right_div.print_type(),
+#             convergence_repeats=3,
+#         )
+#         toc = perf_counter_ns()
+
+#         print("Symmetric update final convergence:", f_update, g_update, i_sup)
+#         print(f"W2 Computed in {toc-tic} ns")
+
+#         return (
+#             sum(uotclass.dual_cost(force_type=force_type))
+#             - (
+#                 dense_symmetric_potential['dual']
+#                 + sum(uotclass.debias_g.dual_cost(force_type=force_type))
+#             )
+#             / 2
+#             + uotclass.epsilon * (uotclass.α_s.sum() - uotclass.β_t.sum()) ** 2 / 2
+#         ).cpu().item(), 
 
 
 def check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_tolerance=1e-10):
