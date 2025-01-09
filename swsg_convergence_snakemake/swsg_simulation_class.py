@@ -201,7 +201,7 @@ class SWSGSimulation:
         print(f"Dense data saved to {error_path}")
                                                           
 
-    def compute_W2_errors(self, method, epsilon, result_file, lloyd_file, l_errors, output_dir, which='1'):
+    def compute_W2_errors(self, method, epsilon, result_file, lloyd_file, l_errors, output_dir, which=1):
         """Compute norms and Wasserstein distances using saved simulation results."""
         print(f"Computing errors for: {method}, ε={epsilon}")
 
@@ -250,20 +250,20 @@ class SWSGSimulation:
         N = len(X)
         N_dense = len(X_dense)
 
-        if which == '1':
+        if which == 1:
             s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(Y), None, None)
             method_data["h_error"]["original"] = s
             print('Oringal Se loss:', s)
-        elif which == '2':
+        elif which == 2:
             s,uotclass = loss(dense_weights, dense_points, _torch_numpy_process(h / N), _torch_numpy_process(X), uotclass.f, uotclass.g)
             method_data["h_error"]["W_error"] = s
             print("h error", s)
-        elif which == '3':
+        elif which == 3:
             # REgular debiased
             s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(debias_x_star), uotclass.f, uotclass.g)
             method_data["debias"]["W_error_regular"] = s
             print("regular debiased", s)
-        elif which == '4':
+        elif which == 4:
             # Regular biased
             s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(grad_phi), uotclass.f, uotclass.g)
             method_data["bias"]["W_error_regular"] = s
