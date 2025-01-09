@@ -126,5 +126,5 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d})
 sim.combine_dicts("{wildcards.method}", {wildcards.epsilon}, output_dir="data_store")
-'
+' >> combine.out 2>> combine.err
         """

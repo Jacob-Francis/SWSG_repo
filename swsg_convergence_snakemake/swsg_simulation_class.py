@@ -290,15 +290,15 @@ class SWSGSimulation:
                     dict1[key] = value
             return dict1
 
-            main_path  = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_error"
-            which =  1
+        main_path  = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_error"
+        which =  1
+        with open(main_path+f"_{which}_which.pkl", 'rb') as f:
+            dict0 = pickle.load(f) 
+        
+        for which in [2, 3, 4]:
             with open(main_path+f"_{which}_which.pkl", 'rb') as f:
-                dict0 = pickle.load(f) 
-            
-            for which in [2, 3, 4]:
-                with open(main_path+f"_{which}_which.pkl", 'rb') as f:
-                    dict1 = pickle.load(f) 
-                dict0 = merge_dicts(dict0,dict1)
+                dict1 = pickle.load(f) 
+            dict0 = merge_dicts(dict0,dict1)
             
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors.pkl"
         with open(error_path, "wb") as f:
