@@ -201,7 +201,7 @@ class SWSGSimulation:
         print(f"Dense data saved to {error_path}")
                                                           
 
-    def compute_W2_errors(self, method, epsilon, result_file, lloyd_file, l_errors, output_dir):
+    def compute_W2_errors(self, method, epsilon, result_file, lloyd_file, l_errors, output_dir, which='1'):
         """Compute norms and Wasserstein distances using saved simulation results."""
         print(f"Computing errors for: {method}, ε={epsilon}")
 
@@ -250,28 +250,60 @@ class SWSGSimulation:
         N = len(X)
         N_dense = len(X_dense)
 
-        s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(Y), None, None)
-        method_data["h_error"]["original"] = s
-        print('Oringal Se loss:', s)
-
-        s,uotclass = loss(dense_weights, dense_points, _torch_numpy_process(h / N), _torch_numpy_process(X), uotclass.f, uotclass.g)
-        method_data["h_error"]["W_error"] = s
-        print("h error", s)
-
-        # REgular debiased
-        s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(debias_x_star), uotclass.f, uotclass.g)
-        method_data["debias"]["W_error_regular"] = s
-        print("regular debiased", s)
-        
-        # Regular biased
-        s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(grad_phi), uotclass.f, uotclass.g)
-        method_data["bias"]["W_error_regular"] = s
-
-        print("regular bias", s)
+        if which == '1':
+            s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(Y), None, None)
+            method_data["h_error"]["original"] = s
+            print('Oringal Se loss:', s)
+        elif which == '2':
+            s,uotclass = loss(dense_weights, dense_points, _torch_numpy_process(h / N), _torch_numpy_process(X), uotclass.f, uotclass.g)
+            method_data["h_error"]["W_error"] = s
+            print("h error", s)
+        elif which == '3':
+            # REgular debiased
+            s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(debias_x_star), uotclass.f, uotclass.g)
+            method_data["debias"]["W_error_regular"] = s
+            print("regular debiased", s)
+        elif which == '4':
+            # Regular biased
+            s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(grad_phi), uotclass.f, uotclass.g)
+            method_data["bias"]["W_error_regular"] = s
+            print("regular bias", s)
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors.pkl"
+        error_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(method_data, f)
         print(f"Error data saved to {error_path}")
+
+    def combine_dicts(self, method, epsilon, output_dir):
+        def merge_dicts(dict1, dict2):
+            """Recursively merges two dictionaries, keeping the value from dict1 if keys overlap."""
+            for key, value in dict2.items():
+                if key in dict1:
+                    if isinstance(dict1[key], dict) and isinstance(value, dict):
+                        # If both values are dictionaries, merge them recursively
+                        dict1[key] = merge_dicts(dict1[key], value)
+                    else:
+                        # If not both are dictionaries, keep the value from dict1 (or dict2, depending on preference)
+                        continue  # This keeps dict1's value and discards dict2's value for this key
+                else:
+                    dict1[key] = value
+            return dict1
+
+            main_path  = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_error"
+            which =  1
+            with open(main_path+f"_{which}_which.pkl", 'rb') as f:
+                dict0 = pickle.load(f) 
+            
+            for which in [2, 3, 4]:
+                with open(main_path+f"_{which}_which.pkl", 'rb') as f:
+                    dict1 = pickle.load(f) 
+                dict0 = merge_dicts(dict0,dict1)
+            
+        error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors.pkl"
+        with open(error_path, "wb") as f:
+            pickle.dump(dict0, f)
+        print(f"Error data saved to {error_path}")
+
+
 

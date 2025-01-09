@@ -2,7 +2,7 @@
 profiles = ["jet", "uniform", "incline"]
 methods = ["one", "four"]
 epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
-
+whichs = [1, 2, 3, 4]
 # Specify the available CUDA devices as resources
   # Two CUDA devices available
 configfile: "config.yaml"
@@ -16,8 +16,8 @@ rule all:
                method=methods, epsilon=epsilons, profile=profiles),
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl", 
                method=methods, epsilon=epsilons, profile=profiles),
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_correctederrors.pkl", 
-               method=methods, epsilon=epsilons, profile=profiles)
+        expand("data_store/temp/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs)
+
 
 rule run_lloyd:
     output:
@@ -102,7 +102,7 @@ rule compute_w2_errors:
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl",
         dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl"
     output:
-        allerrors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
+        temp_errors = "data_store/temp/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which.pkl"
     resources:
         gpu=0  # Each job uses one CUDA device
     params:
@@ -114,6 +114,27 @@ rule compute_w2_errors:
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda={resources.gpu}, profile="{params.profile}", d={params.d})
-sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store")
+sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=wildcards.which)
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+        """
+
+rule combine_w2_errors:
+    input:
+        temp_1 = "data_store/temp/{method}_epsilon_{epsilon}_profile_{profile}_errors_1_which.pkl",
+        temp_2 = "data_store/temp/{method}_epsilon_{epsilon}_profile_{profile}_errors_2_which.pkl",
+        temp_3 = "data_store/temp/{method}_epsilon_{epsilon}_profile_{profile}_errors_3_which.pkl",
+        temp_4 = "data_store/temp/{method}_epsilon_{epsilon}_profile_{profile}_errors_4_which.pkl"
+    output:
+        allerrors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors.pkl"
+    params:
+        profile="{profile}",
+        d=1
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d})
+sim.combine_dicts("{wildcards.method}", {wildcards.epsilon}, output_dir="data_store")
+'
         """
