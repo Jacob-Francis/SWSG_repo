@@ -638,7 +638,8 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
     # dense_symmetric_potential = dict(f=g, uot(dense, dense))
     # a,X has to be dense
     '''
-    cuda = X.device
+
+    cuda = X.device if not 'cpu' else None
     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
     uotclass.parameters(epsilon=0.002)
     uotclass.densities(X, Y, α, β)

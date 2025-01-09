@@ -107,6 +107,7 @@ class SWSGSimulation:
             result = pickle.load(f)
 
         h_true = result["h_true"].view(-1, 1)
+        h_true /= h_true.sum()
         Y = result["Y"]
         X = result["X"]
         G = result["G"]
@@ -115,9 +116,9 @@ class SWSGSimulation:
         h = (h/N).view(-1,1)                                                    
 
         # Norm errors for h
-        l1_h = torch.linalg.norm(h_true - h, ord=1) / N 
+        l1_h = torch.linalg.norm(h_true - h, ord=1)
         l2_h = (
-            torch.linalg.norm(h_true - h, ord=2) / N ** 0.5
+            torch.linalg.norm(h_true - h, ord=2)
         )
         linf_h = torch.linalg.norm(h_true - h, ord=float("inf")).item()
 
@@ -239,7 +240,7 @@ class SWSGSimulation:
         dense_points=  _torch_numpy_process(X_dense)
 
         uni_weights = _torch_numpy_process(torch.ones_like(h))
-        uni_weights = uni_weights.sum()
+        uni_weights /= uni_weights.sum()
 
         # Load data;
         with open(l_errors, "rb") as f:
