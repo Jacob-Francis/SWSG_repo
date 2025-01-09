@@ -104,7 +104,7 @@ rule compute_w2_errors:
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d})
-sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=wildcards.which)
+sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which={wildcards.which})
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
 
