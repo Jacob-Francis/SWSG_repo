@@ -451,7 +451,7 @@ def pykeops_approach_avoid_Wminus1(
         energy=True,
     )
 
-    print("Final convergence", output)
+    print("SWSG Sinkhorn final:", output[0], ' in ', output[2], ' iterations ')
 
     #
     return (
@@ -459,7 +459,7 @@ def pykeops_approach_avoid_Wminus1(
         swsg_class.g,
         swsg_class.debias_f.f,
         swsg_class.g_s,
-        output,
+        output[3],
         swsg_class,
     )
 
@@ -470,7 +470,6 @@ def swsg_run_halley_sinkhorn(swsg_class, lambert_tolerance=1e-12, tolerance=1e-1
     max_iterates = int(
         -1.5 / swsg_class.epsilon.cpu() * np.log(swsg_class.epsilon.cpu())
     )
-    error_list = []
 
     output = swsg_class.swsgsinkhorn_loop(
         sinkhorn_steps=max_iterates,
@@ -478,7 +477,10 @@ def swsg_run_halley_sinkhorn(swsg_class, lambert_tolerance=1e-12, tolerance=1e-1
         halley_updates=True,
         newton_tol=lambert_tolerance,
     )
-    print("SWSG final:", output)
+
+    error_list = output[3]
+
+    print("SWSG halley final:", output[0], ' in ', output[2], ' iterations ')
     swsg_class.debias_f = UnbalancedOT(
         set_fail=swsg_class.set_fail,
         pykeops=swsg_class.pykeops,

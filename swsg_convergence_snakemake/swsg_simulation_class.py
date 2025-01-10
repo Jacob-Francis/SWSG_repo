@@ -59,7 +59,7 @@ class SWSGSimulation:
         X = result["X"]
         G = result["G"]
         X, Y, G, swsg_class, h_true = swsg_class_generate(
-            X, Y, G, h_true, self.device, self.dtype, epsilon=epsilon, b=self.b, d=self.d, cuda=self.device.index, tol=self.tol
+            X, Y, G, h_true, self.device, self.dtype, epsilon=epsilon, cuda=self.device.index, tol=self.tol
         )
 
         tic = perf_counter_ns()
