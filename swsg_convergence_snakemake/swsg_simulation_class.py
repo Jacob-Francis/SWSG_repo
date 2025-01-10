@@ -255,17 +255,17 @@ class SWSGSimulation:
             method_data["h_error"]["original"] = s
             print('Oringal Se loss:', s)
         elif which == 2:
-            s,uotclass = loss(dense_weights, dense_points, _torch_numpy_process(h / N), _torch_numpy_process(X), uotclass.f, uotclass.g)
+            s,uotclass = loss(dense_weights, dense_points, _torch_numpy_process(h / N), _torch_numpy_process(X), None, None)
             method_data["h_error"]["W_error"] = s
             print("h error", s)
         elif which == 3:
             # REgular debiased
-            s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(debias_x_star), uotclass.f, uotclass.g)
+            s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(debias_x_star), None, None)
             method_data["debias"]["W_error_regular"] = s
             print("regular debiased", s)
         elif which == 4:
             # Regular biased
-            s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(grad_phi), uotclass.f, uotclass.g)
+            s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(grad_phi), None, None)
             method_data["bias"]["W_error_regular"] = s
             print("regular bias", s)
 
