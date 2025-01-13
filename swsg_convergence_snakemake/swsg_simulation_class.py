@@ -250,24 +250,34 @@ class SWSGSimulation:
         N = len(X)
         N_dense = len(X_dense)
 
+        print('WHICH', which)
         if which == 1:
+            print('here')
             s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(Y), None, None)
             method_data["h_error"]["original"] = s
             print('Oringal Se loss:', s)
         elif which == 2:
+            print('nope')
+
             s,uotclass = loss(dense_weights, dense_points, _torch_numpy_process(h / N), _torch_numpy_process(X), None, None)
             method_data["h_error"]["W_error"] = s
             print("h error", s)
         elif which == 3:
+            print('damn')
+
             # REgular debiased
             s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(debias_x_star), None, None)
             method_data["debias"]["W_error_regular"] = s
             print("regular debiased", s)
         elif which == 4:
+            print('humm')
+
             # Regular biased
             s, uotclass = loss(dense_weights, dense_points, uni_weights, _torch_numpy_process(grad_phi), None, None)
             method_data["bias"]["W_error_regular"] = s
             print("regular bias", s)
+        else:
+            print('fuck')
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         error_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which.pkl"

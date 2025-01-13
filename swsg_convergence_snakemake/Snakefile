@@ -33,23 +33,23 @@ rule all:
 # # '> {wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.epsilon}{wildcards.profile}.err
 # #         """
 
-# # rule run_simulation:
-# #     input:
-# #         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
-# #     output:
-# #         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl"
-# #     params:
-# #         profile="{profile}",
-# #         d=1
-# #     shell:
-# #         """
-# #         python3 -c '
-# # from swsg_simulation_class import SWSGSimulation
+rule run_simulation:
+    input:
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
+    output:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl"
+    params:
+        profile="{profile}",
+        d=1
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
 
-# # sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d})
-# # sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
-# # '> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
-# #         """
+sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
+sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
+'> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+        """
         
 # # rule run_dense_sym:
 # #     output:
@@ -68,24 +68,24 @@ rule all:
 # # '> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
 # #         """
 
-# rule compute_l_errors:
-#     input:
-#         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
-#         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
-#     params:
-#         profile="{profile}",
-#         d=1
-#     output:
-#         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl"
-#     shell:
-#         """
-#         python3 -c '
-# from swsg_simulation_class import SWSGSimulation
+rule compute_l_errors:
+    input:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results.pkl",
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_llody.pkl"
+    params:
+        profile="{profile}",
+        d=1
+    output:
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors.pkl"
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
 
-# sim = SWSGSimulation(profile="{params.profile}", d={params.d})
-# sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
-# ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
-#         """
+sim = SWSGSimulation(profile="{params.profile}", d={params.d})
+sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+        """
 
 rule compute_w2_errors:
     input:
