@@ -46,7 +46,7 @@ rule run_simulation:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d}, suff={params.suff})
+sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
 '> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
@@ -83,7 +83,7 @@ rule compute_l_errors:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(profile="{params.profile}", d={params.d}, suff={params.suff})
+sim = SWSGSimulation(profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
@@ -106,7 +106,7 @@ rule compute_w2_errors:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda=2, profile="{params.profile}", d={params.d}, suff={params.suff})
+sim = SWSGSimulation(cuda=2, profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
@@ -125,7 +125,7 @@ rule combine_w2_errors:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d}, suff={params.suff})
+sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.combine_dicts("{wildcards.method}", {wildcards.epsilon}, output_dir="data_store")
 ' >> combine.out 2>> combine.err
         """
