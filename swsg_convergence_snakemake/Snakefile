@@ -27,6 +27,10 @@ rule run_lloyd:
         d=1,
     shell:
         """
+        if [ -f "data_store/epsilon_{wildcards.epsilon}_profile_{wildcards.profile}_lloyd.pkl" ]; then
+            echo "File already exists, skipping simulation.";
+            exit 0;
+        fi
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
@@ -46,6 +50,10 @@ rule run_simulation:
         suff="{suffix}"
     shell:
         """
+        if [ -f "data_store/{wildcards.method}_epsilon_{wildcards.epsilon}_profile_{wildcards.profile}_results{wildcards.suffix}.pkl" ]; then
+            echo "File already exists, skipping simulation.";
+            exit 0;
+        fi
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
