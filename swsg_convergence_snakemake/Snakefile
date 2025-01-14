@@ -103,6 +103,7 @@ rule compute_w2_errors:
         te = "data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl"
     params:
         profile="{profile}",
+        wild = "{which}"
         d=1,
         suff="_{suffix}"
     shell:
@@ -111,7 +112,7 @@ rule compute_w2_errors:
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=2, profile="{params.profile}", d={params.d}, suff={params.suff})
-sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which={wildcards.which})
+sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
         """
 
