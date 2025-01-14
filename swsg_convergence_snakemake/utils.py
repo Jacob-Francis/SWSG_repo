@@ -23,8 +23,10 @@ def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
     Llody fitting Y, beta to X, alpha, using geomloss. Tolerance at subsequent iterations aren't changing much.
     NOT a true convergence metric.
     """
-    llody_loss = SamplesLoss('sinkhorn', p=2, blur=blur, scaling=0.99, backend='multiscale')
-    err  = 1e3
+    llody_loss = SamplesLoss(
+        "sinkhorn", p=2, blur=blur, scaling=0.99, backend="multiscale"
+    )
+    err = 1e3
     kmax = 100
     count = 0
 
@@ -34,149 +36,221 @@ def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
             L_ = llody_loss(beta, Y, alpha, X)
             grad = torch.autograd.grad(L_, Y)[0]
 
-            Y = Y - lr * grad * len(beta)  # Maybe times by beta here - though it is actually 1/N?
+            Y = Y - lr * grad * len(
+                beta
+            )  # Maybe times by beta here - though it is actually 1/N?
             err = torch.linalg.norm(grad)
             count += 1
 
             # Update the progress bar
             pbar.update(1)
             pbar.set_postfix({"Error": err.item(), "Loss": L_.item()})
-        
-    print('Final W2 loss:', llody_loss(beta, Y, alpha, X))
+
+    print("Final W2 loss:", llody_loss(beta, Y, alpha, X))
     return Y
 
-def jet2D_lloyd(device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0, dense_scale=3, tol=1e-11):
-    
+
+def jet2D_lloyd(
+    device,
+    dtype,
+    epsilon=0.05,
+    f=1.0,
+    g=0.1,
+    a=0.1,
+    b=10.0,
+    c=0.5,
+    d=1.0,
+    dense_scale=3,
+    tol=1e-11,
+):
+
     # Decide on parameters - baseed off of epsilon
     n1, n2 = int(1 / epsilon), int(1 / epsilon)
-    m1, m2 = dense_scale*int(1 / epsilon), dense_scale*int(1 / epsilon)
+    m1, m2 = dense_scale * int(1 / epsilon), dense_scale * int(1 / epsilon)
     # 2D Llody
 
     # Assigning uniform weighting to points - Lloyde type
     def height_func(x):
         return a * torch.tanh(b * (x - c)) + d
-    
-    # Llody fit against dense sampling 
-    Y = torch.rand((n1*n2, 2), device=device).type(dtype)*50 - 24  # Random box in [-4, 6]x[-4, 6] becuase I want solutions in [0, 1]x[0,1]
+
+    # Llody fit against dense sampling
+    Y = (
+        torch.rand((n1 * n2, 2), device=device).type(dtype) * 50 - 24
+    )  # Random box in [-4, 6]x[-4, 6] becuase I want solutions in [0, 1]x[0,1]
     Y = Y.requires_grad_(True)
-    beta = torch.ones((n1*n2), device=device).type(dtype)
+    beta = torch.ones((n1 * n2), device=device).type(dtype)
     beta /= beta.sum()
-    
+
     # Uniform sample - maybe dense?
-    X = torch.cartesian_prod(
-        torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
-        torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
-    ).to(device).type(dtype)
+    X = (
+        torch.cartesian_prod(
+            torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
+            torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
+        )
+        .to(device)
+        .type(dtype)
+    )
     alpha = torch.Tensor(height_func(X[:, 1])).to(device).type(dtype)
     alpha /= alpha.sum()
-    
+
     Y = lloyd(epsilon**0.5, X, Y, alpha, beta, tol=tol)
-    
+
     # generate regulr uniform grid of correct size for universe;
     # Overwriting dense grid used for lloyd sampling
-    X = torch.cartesian_prod(
-        torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
-        torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
-    ).to(device).type(dtype)
+    X = (
+        torch.cartesian_prod(
+            torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
+            torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
+        )
+        .to(device)
+        .type(dtype)
+    )
     # Not normalised to one for later purposes.
     alpha = torch.Tensor(height_func(X[:, 1])).to(device).type(dtype)
-    
+
     # Calculate nabla P: x + f^2 * g * partial h
     G = Y.detach().clone()
-    G[:, 1] = G[:, 1] + f**2 * g * a * b * (1 - torch.tanh(b * (Y[:, 1] - 0.5)) ** 2) # X Y?
+    G[:, 1] = G[:, 1] + f**2 * g * a * b * (
+        1 - torch.tanh(b * (Y[:, 1] - 0.5)) ** 2
+    )  # X Y?
 
-   
     h_true = alpha.view(-1, 1)
-    mu = torch.ones_like(h_true) * d  / len(X[:, 1])
+    mu = torch.ones_like(h_true) * d / len(X[:, 1])
 
-    return  X, Y, G, h_true, mu
+    return X, Y, G, h_true, mu
 
-def incline2D_lloyd(device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0, dense_scale=3, tol=1e-11):
-    
+
+def incline2D_lloyd(
+    device,
+    dtype,
+    epsilon=0.05,
+    f=1.0,
+    g=0.1,
+    a=0.1,
+    b=10.0,
+    c=0.5,
+    d=1.0,
+    dense_scale=3,
+    tol=1e-11,
+):
+
     # Decide on parameters - baseed off of epsilon
     n1, n2 = int(1 / epsilon), int(1 / epsilon)
-    m1, m2 = dense_scale*int(1 / epsilon), dense_scale*int(1 / epsilon)
+    m1, m2 = dense_scale * int(1 / epsilon), dense_scale * int(1 / epsilon)
     # 2D Llody
 
     # Assigning uniform weighting to points - Lloyde type
     def height_func(x):
         return a * b * (x - c) + d
 
-    # Llody fit against dense sampling 
-    Y = torch.rand((n1*n2, 2), device=device).type(dtype)*50 - 24  # Random box in [-4, 6]x[-4, 6] becuase I want solutions in [0, 1]x[0,1]
+    # Llody fit against dense sampling
+    Y = (
+        torch.rand((n1 * n2, 2), device=device).type(dtype) * 50 - 24
+    )  # Random box in [-4, 6]x[-4, 6] becuase I want solutions in [0, 1]x[0,1]
     Y = Y.requires_grad_(True)
-    beta = torch.ones((n1*n2), device=device).type(dtype)
+    beta = torch.ones((n1 * n2), device=device).type(dtype)
     beta /= beta.sum()
-    
+
     # Uniform sample - maybe dense?
-    X = torch.cartesian_prod(
-        torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
-        torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
-    ).to(device).type(dtype)
+    X = (
+        torch.cartesian_prod(
+            torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
+            torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
+        )
+        .to(device)
+        .type(dtype)
+    )
 
     alpha = torch.Tensor(height_func(X[:, 1])).to(device).type(dtype)
     alpha /= alpha.sum()
-    
+
     Y = lloyd(epsilon**0.5, X, Y, alpha, beta, tol=tol)
-    
+
     # generate regulr uniform grid of correct size for universe;
     # Overwriting dense grid used for lloyd sampling
-    X = torch.cartesian_prod(
-        torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
-        torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
-    ).to(device).type(dtype)
+    X = (
+        torch.cartesian_prod(
+            torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
+            torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
+        )
+        .to(device)
+        .type(dtype)
+    )
     alpha = torch.Tensor(height_func(X[:, 1])).to(device).type(dtype)
-    
+
     # Calculate nabla P: x + f^2 * g * partial h
-    G = Y.detach().clone()  
+    G = Y.detach().clone()
     G[:, 1] = G[:, 1] + f**-2 * g * a * b
-   
-    h_true = alpha.view(-1, 1) 
-    mu = torch.ones_like(h_true) * d  / len(X[:, 1])
 
-    return  X, Y, G, h_true, mu
+    h_true = alpha.view(-1, 1)
+    mu = torch.ones_like(h_true) * d / len(X[:, 1])
 
-def uniform2D_lloyd(device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0, dense_scale=3, tol=1e-11):
-    
+    return X, Y, G, h_true, mu
+
+
+def uniform2D_lloyd(
+    device,
+    dtype,
+    epsilon=0.05,
+    f=1.0,
+    g=0.1,
+    a=0.1,
+    b=10.0,
+    c=0.5,
+    d=1.0,
+    dense_scale=3,
+    tol=1e-11,
+):
+
     # Decide on parameters - baseed off of epsilon
     n1, n2 = int(1 / epsilon), int(1 / epsilon)
-    m1, m2 = dense_scale*int(1 / epsilon), dense_scale*int(1 / epsilon)
+    m1, m2 = dense_scale * int(1 / epsilon), dense_scale * int(1 / epsilon)
     # 2D Llody
-   
+
     # Assigning uniform weighting to points - Lloyde type
     def height_func(x):
         return torch.ones_like(x) / len(x)
-    
-    # Llody fit against dense sampling 
-    Y = torch.rand((n1*n2, 2), device=device).type(dtype)*50 - 24  # Random box in [-4, 6]x[-4, 6] becuase I want solutions in [0, 1]x[0,1]
+
+    # Llody fit against dense sampling
+    Y = (
+        torch.rand((n1 * n2, 2), device=device).type(dtype) * 50 - 24
+    )  # Random box in [-4, 6]x[-4, 6] becuase I want solutions in [0, 1]x[0,1]
     Y = Y.requires_grad_(True)
-    beta = torch.ones((n1*n2), device=device).type(dtype)
+    beta = torch.ones((n1 * n2), device=device).type(dtype)
     beta /= beta.sum()
-    
+
     # Uniform sample - maybe dense?
-    X = torch.cartesian_prod(
-        torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
-        torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
-    ).to(device).type(dtype)
+    X = (
+        torch.cartesian_prod(
+            torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
+            torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
+        )
+        .to(device)
+        .type(dtype)
+    )
 
     alpha = torch.Tensor(height_func(X[:, 1])).to(device).type(dtype)
     alpha /= alpha.sum()
-    
+
     Y = lloyd(epsilon**0.5, X, Y, alpha, beta, tol=tol)
-    
+
     # generate regulr uniform grid of correct size for universe;
     # Overwriting dense grid used for lloyd sampling
-    X = torch.cartesian_prod(
-        torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
-        torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
-    ).to(device).type(dtype)
+    X = (
+        torch.cartesian_prod(
+            torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
+            torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
+        )
+        .to(device)
+        .type(dtype)
+    )
     alpha = torch.Tensor(height_func(X[:, 1])).to(device).type(dtype)
 
     # Calculate nabla P: x + f^2 * g * partial h
-    G = Y.detach().clone() 
+    G = Y.detach().clone()
 
     h_true = alpha.view(-1, 1)
-    mu = torch.ones_like(h_true) * d  / len(X[:, 1])
+    mu = torch.ones_like(h_true) * d / len(X[:, 1])
 
     return X, Y, G, h_true, mu
 
@@ -196,18 +270,13 @@ def incline(epsilon, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0):
     def int_h(x):
         return a * b * (x**2 / 2 - c * x) + d * x
 
-    # find X_j s.t. universe weighting is 1/N
     # X_j = np.zeros(n1)
-    # for k, ui in enumerate(
-    #     d * np.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1, endpoint=True)
-    # ):
+    # for k, ui in enumerate(d * np.linspace(1 / n1, 1, n1, endpoint=True)):
     #     X_j[k] = optimize.root(lambda x: int_h(x) - ui, x0=0).x[0]
-    X_j = np.zeros(n1)
-    for k, ui in enumerate(d * np.linspace(1 / n1, 1, n1, endpoint=True)):
-        X_j[k] = optimize.root(lambda x: int_h(x) - ui, x0=0).x[0]
+    # X_j[1:] = (X_j[:-1] + X_j[1:]) / 2
+    # X_j[0] = X_j[0] / 2
 
-    X_j[1:] = (X_j[:-1] + X_j[1:]) / 2
-    X_j[0] = X_j[0] / 2
+    X_j = torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1)
 
     # Calculate nabla P: x + f^2 * g * partial h
     G_i = X_j + f**-2 * g * a * b
@@ -262,13 +331,24 @@ def incline_no_lloyd(epsilon, f=1.0, g=0.1, a=0.2, b=1.0, c=0.5, d=1.0):
 
 
 def initialisation(
-    device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0, profile_type="jet", cuda=0, tol=1e-11
+    device,
+    dtype,
+    epsilon=0.05,
+    f=1.0,
+    g=0.1,
+    a=0.1,
+    b=10.0,
+    c=0.5,
+    d=1.0,
+    profile_type="jet",
+    cuda=0,
+    tol=1e-11,
 ):
     """
     Initialise a jet profile and associated object for solving the sWSG problem.
     """
     # Decide on parameters
-    global n1, n2, m1, m2 
+    global n1, n2, m1, m2
     n1, n2 = int(1 / epsilon), int(1 / epsilon)
     m1, m2 = int(1 / epsilon), int(1 / epsilon)
 
@@ -288,8 +368,7 @@ def initialisation(
         # X_j[1:] = (X_j[:-1] + X_j[1:]) / 2
         # X_j[0] = X_j[0] / 2
 
-        X_j = torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2)
-
+        X_j = torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1)
 
         # Calculate nabla P: x + f^2 * g * partial h
         G_i = X_j + f**2 * g * a * b * (1 - np.tanh(b * (X_j - 0.5)) ** 2)
@@ -308,9 +387,8 @@ def initialisation(
         h_true = height_func(X[:, 1]).view(-1, 1)
         mu = torch.ones_like(h_true) * d / len(X[:, 1])
 
-
         # Assert JET is correct;
-          # Check that the jet profile starts off obeying the convexity principle
+        # Check that the jet profile starts off obeying the convexity principle
         assert (
             2 * f
             + g
@@ -379,7 +457,7 @@ def initialisation(
         mu = torch.ones_like(h_true) * d / len(X[:, 1])
     elif profile_type == "thin":
         d = (epsilon / g) * 0.5
-        print(f'Think fluid thickness {d}')
+        print(f"Think fluid thickness {d}")
         X = torch.cartesian_prod(
             torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
             torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
@@ -390,19 +468,18 @@ def initialisation(
         )
         G = torch.cartesian_prod(
             torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2),
-            torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),s
+            torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1),
+            s,
         )
-        h_true = d*torch.ones_like(X[:, 1]).view(-1, 1)
+        h_true = d * torch.ones_like(X[:, 1]).view(-1, 1)
         mu = torch.ones_like(h_true) * d / len(X[:, 1])
     elif profile_type == "incline":
         X, Y, G, h_true, mu = incline(epsilon, f, g, a, b, c, d)
     elif profile_type == "incline_no_lloyd":
-        X, Y, G, h_true, mu = incline_no_lloyd(
-            epsilon, f, g, a, b, c, d
-        )
+        X, Y, G, h_true, mu = incline_no_lloyd(epsilon, f, g, a, b, c, d)
     elif profile_type == "incline2D_lloyd":
         X, Y, G, h_true, mu = incline2D_lloyd(
-            device, dtype,epsilon, f, g, a, b, c, d, tol=tol
+            device, dtype, epsilon, f, g, a, b, c, d, tol=tol
         )
     elif profile_type == "jet2D_lloyd":
         X, Y, G, h_true, mu = jet2D_lloyd(
@@ -415,8 +492,21 @@ def initialisation(
 
     return X, Y, G, h_true
 
+
 def swsg_class_generate(
-    X, Y, G, h_true, device, dtype, f=1.0, g=0.1, cuda=0, tol=1e-11, d=1.0, epsilon=0.05, 
+    X,
+    Y,
+    G,
+    h_true,
+    device,
+    dtype,
+    f=1.0,
+    g=0.1,
+    cuda=0,
+    tol=1e-11,
+    d=1.0,
+    epsilon=0.05,
+    lloyd=True,
 ):
     if cuda is None:
         swsg_class = SWSGSinkNewton(pykeops=True, set_fail=True)
@@ -426,19 +516,30 @@ def swsg_class_generate(
         )
     # torch.cuda.set_device(5)
     swsg_class.parameters(ε=epsilon, f=f, g=g)
-    h_leb = torch.ones_like(X[:,0]) * d / len(X[:,0])
+    h_leb = torch.ones_like(X[:, 0]) * d / len(X[:, 0])
 
-    if self.lloyd:
-        sigma = torch.ones_like(G[:,0]) * d / len(G[:,0])
+    if lloyd:
+        sigma = torch.ones_like(G[:, 0]) * d / len(G[:, 0])
     else:
         sigma = h_true / h_true.sum()
 
-    swsg_class.densities(source_points=G.detach().cpu(), target_points=X.detach().cpu(), source_density=sigma.detach().cpu(), target_density=h_leb.detach().cpu())
+    swsg_class.densities(
+        source_points=G.detach().cpu(),
+        target_points=X.detach().cpu(),
+        source_density=sigma.detach().cpu(),
+        target_density=h_leb.detach().cpu(),
+    )
 
     # assert (swsg_class.β_t == mu).all()
     torch.cuda.empty_cache()
 
-    return X.detach().to(device), Y.detach().to(device), G.detach().to(device), swsg_class, h_true.detach().to(device)
+    return (
+        X.detach().to(device),
+        Y.detach().to(device),
+        G.detach().to(device),
+        swsg_class,
+        h_true.detach().to(device),
+    )
 
 
 def pykeops_approach_avoid_Wminus1(
@@ -453,7 +554,7 @@ def pykeops_approach_avoid_Wminus1(
         energy=True,
     )
 
-    print("SWSG Sinkhorn final:", output[0], ' in ', output[2], ' iterations ')
+    print("SWSG Sinkhorn final:", output[0], " in ", output[2], " iterations ")
 
     #
     return (
@@ -482,7 +583,7 @@ def swsg_run_halley_sinkhorn(swsg_class, lambert_tolerance=1e-12, tolerance=1e-1
 
     error_list = output[3]
 
-    print("SWSG halley final:", output[0], ' in ', output[2], ' iterations ')
+    print("SWSG halley final:", output[0], " in ", output[2], " iterations ")
     swsg_class.debias_f = UnbalancedOT(
         set_fail=swsg_class.set_fail,
         pykeops=swsg_class.pykeops,
@@ -512,7 +613,6 @@ def swsg_run_halley_sinkhorn(swsg_class, lambert_tolerance=1e-12, tolerance=1e-1
     )
 
 
-
 def swsg_solver(swsg_class, method="three", lambert_tolerance=1e-12, tolerance=1e-12):
 
     method_dict = dict(
@@ -533,7 +633,7 @@ def swsg_solver(swsg_class, method="three", lambert_tolerance=1e-12, tolerance=1
         swsg_class, lambert_tolerance=lambert_tolerance, tolerance=tolerance
     )
     toc = perf_counter_ns()
-    print('SWSGLOOP:', method, toc-tic)
+    print("SWSGLOOP:", method, toc - tic)
 
     grad_phi = swsg_class.pykeops_formulas.barycentres(
         ψ,
@@ -560,7 +660,8 @@ def swsg_solver(swsg_class, method="three", lambert_tolerance=1e-12, tolerance=1
 
     return φ, ψ, φ_s, ψ_s, grad_phi, grad_phi_debias, error_list
 
-def compute_dense_symmetric_potential(X, α, Y, β, cuda='cuda:0', force_type='pykeops'):
+
+def compute_dense_symmetric_potential(X, α, Y, β, cuda="cuda:0", force_type="pykeops"):
     """
     Compute the dense symmetric potential when no precomputed potential is provided.
     """
@@ -574,7 +675,7 @@ def compute_dense_symmetric_potential(X, α, Y, β, cuda='cuda:0', force_type='p
         verbose=False,
         aprox="balanced",
         convergence_repeats=3,
-        convergence_or_fail=True
+        convergence_or_fail=True,
     )
     toc = perf_counter_ns()
 
@@ -585,7 +686,10 @@ def compute_dense_symmetric_potential(X, α, Y, β, cuda='cuda:0', force_type='p
 
     return dict(f=uotclass.g.cpu(), dual=sum(d))
 
-def compute_sinkhorn_divergence(X, α, Y, β, dense_symmetric_potential, cuda='cuda:0', force_type='pykeops'):
+
+def compute_sinkhorn_divergence(
+    X, α, Y, β, dense_symmetric_potential, cuda="cuda:0", force_type="pykeops"
+):
     """
     Compute the symmetric update using a precomputed potential.
     """
@@ -596,10 +700,10 @@ def compute_sinkhorn_divergence(X, α, Y, β, dense_symmetric_potential, cuda='c
     # Run Sinkhorn
     tic = perf_counter_ns()
     uotclass.sinkhorn_algorithm(
-        f0=dense_symmetric_potential['f'],
+        f0=dense_symmetric_potential["f"],
         g0=torch.zeros_like(uotclass.β_t),
         aprox="balanced",
-        tol=1e-14
+        tol=1e-14,
     )
 
     # Solve the new symmetric potential problem
@@ -626,24 +730,39 @@ def compute_sinkhorn_divergence(X, α, Y, β, dense_symmetric_potential, cuda='c
     print(f"W2 Computed in {toc - tic} ns")
 
     return (
-        sum(uotclass.dual_cost(force_type=force_type))
-        - (
-            dense_symmetric_potential['dual']
-            + sum(uotclass.debias_g.dual_cost(force_type=force_type))
+        (
+            sum(uotclass.dual_cost(force_type=force_type))
+            - (
+                dense_symmetric_potential["dual"]
+                + sum(uotclass.debias_g.dual_cost(force_type=force_type))
+            )
+            / 2
+            + uotclass.epsilon * (uotclass.α_s.sum() - uotclass.β_t.sum()) ** 2 / 2
         )
-        / 2
-        + uotclass.epsilon * (uotclass.α_s.sum() - uotclass.β_t.sum()) ** 2 / 2
-    ).cpu().item()
+        .cpu()
+        .item()
+    )
+
 
 ###################################
-def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0=None, g0=None, force_type='pykeops', tol=1e-12):
-    '''
+def Sinkhorn_Divergence_balanced(
+    X,
+    α,
+    Y,
+    β,
+    dense_symmetric_potential=None,
+    f0=None,
+    g0=None,
+    force_type="pykeops",
+    tol=1e-12,
+):
+    """
     # Run OT(a, b) on grid X, Y reusing the dense symmeric potential and cost
     # dense_symmetric_potential = dict(f=g, uot(dense, dense))
     # a,X has to be dense
-    '''
+    """
 
-    cuda = X.device if not 'cpu' else None
+    cuda = X.device if not "cpu" else None
     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
     uotclass.parameters(epsilon=0.002)
     uotclass.densities(X, Y, α, β)
@@ -656,11 +775,11 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
             verbose=False,
             aprox="balanced",
             convergence_repeats=3,
-            converge_or_fail=True
+            converge_or_fail=True,
         )
-        
+
         d = uotclass.dual_cost(force_type=force_type)
-        
+
         print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
         return dict(f=uotclass.g.cpu(), dual=sum(d))
     else:
@@ -669,9 +788,8 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
         f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
             f0=f0, g0=g0, aprox="balanced", tol=tol
         )
-        
-        print("Sinkhorn update final convergence:", f_update, g_update, i_sup)
 
+        print("Sinkhorn update final convergence:", f_update, g_update, i_sup)
 
         # solve the new symmetric potential problem
         uotclass.debias_g = UnbalancedOT(
@@ -681,9 +799,13 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
             cuda_device=uotclass.device,
         )
 
-        uotclass.debias_g.parameters(uotclass.epsilon, uotclass.rho, uotclass.cost_const)
+        uotclass.debias_g.parameters(
+            uotclass.epsilon, uotclass.rho, uotclass.cost_const
+        )
 
-        uotclass.debias_g.densities(uotclass.Y_t, uotclass.Y_t, uotclass.β_t, uotclass.β_t)
+        uotclass.debias_g.densities(
+            uotclass.Y_t, uotclass.Y_t, uotclass.β_t, uotclass.β_t
+        )
 
         f_update, g_update, i_sup = uotclass.debias_g.sinkhorn_algorithm(
             tol=tol,
@@ -700,7 +822,7 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
         return (
             sum(uotclass.dual_cost(force_type=force_type))
             - (
-                dense_symmetric_potential['dual'].to(uotclass.device)
+                dense_symmetric_potential["dual"].to(uotclass.device)
                 + sum(uotclass.debias_g.dual_cost(force_type=force_type))
             )
             / 2
@@ -715,7 +837,7 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
 #     # dense_symmetric_potential = dict(f=g, uot(dense, dense))
 #     # a,X has to be dense
 #     '''
-    
+
 #     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
 #     uotclass.parameters(epsilon=0.002)
 #     uotclass.densities(X, Y, α, β)
@@ -730,9 +852,9 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
 #             convergence_repeats=3,
 #             converge_or_fail=True
 #         )
-        
+
 #         d = uotclass.dual_cost(force_type=force_type)
-        
+
 #         print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
 #         return dict(f=uotclass.g.cpu(), dual=sum(d))
 #     else:
@@ -774,7 +896,7 @@ def Sinkhorn_Divergence_balanced(X, α, Y, β, dense_symmetric_potential=None,f0
 #             )
 #             / 2
 #             + uotclass.epsilon * (uotclass.α_s.sum() - uotclass.β_t.sum()) ** 2 / 2
-#         ).cpu().item(), 
+#         ).cpu().item(),
 
 
 def check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_tolerance=1e-10):
@@ -794,10 +916,14 @@ def check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_toleranc
         / swsg_class.epsilon
     )
 
-    res = torch.linalg.norm(ψ_s.cpu()  - (
-        ψ.cpu()
-        - swsg_class.epsilon.cpu() * lambertw_scipy(temp.cpu(), k=branch, tol=lambert_tolerance).real
-    ))
+    res = torch.linalg.norm(
+        ψ_s.cpu()
+        - (
+            ψ.cpu()
+            - swsg_class.epsilon.cpu()
+            * lambertw_scipy(temp.cpu(), k=branch, tol=lambert_tolerance).real
+        )
+    )
 
     return res.item()
 
@@ -834,7 +960,7 @@ def check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_toleranc
 
 #             h = (ψ_s - ψ) / 0.1
 #             debias_x_star = grad_phi - (grad_phi_debias - G)
-            
+
 #             method_data[method][epsilon]["lambert_0"] = check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=0, lambert_tolerance=1e-11)
 #             method_data[method][epsilon]["lambert_minus1"] = check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_tolerance=1e-11)
 #             print('BRANCH ERROR:', method_data[method][epsilon]["lambert_0"], method_data[method][epsilon]["lambert_minus1"])
@@ -931,12 +1057,12 @@ def check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_toleranc
 #                 )
 #                 X_dense = X_dense.type(dtype)
 #                 h_true_dense = h_true_dense.type(dtype)
-            
-            
+
+
 #             N = len(X)
 #             N_dense = len(X_dense)
 #             if myclass:
-   
+
 #                 print(N, N_dense)
 #                 print("Wass distanced ....")
 
@@ -998,12 +1124,12 @@ def check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_toleranc
 #                 s = loss(dense_weights, dense_points, swsg_class._torch_numpy_process(h / N), swsg_class.Y_t)
 #                 method_data[method][epsilon]["h_error"]["W_error"] = s.detach().cpu()
 #                 print("h error", s)
-                
+
 #                 # REgular debiased
 #                 s = loss(dense_weights, dense_points, uni_weights, swsg_class._torch_numpy_process(debias_x_star))
 #                 method_data[method][epsilon]["debias"]["W_error_regular"] = s.detach().cpu()
 #                 print("regular debiased", s)
-                
+
 #                 # Regular biased
 #                 s = loss(dense_weights, dense_points, uni_weights, swsg_class._torch_numpy_process(grad_phi))
 #                 print("regular bias", s)
@@ -1022,4 +1148,3 @@ def check_w_minus_one_residual(swsg_class, ψ_s, ψ, branch=-1, lambert_toleranc
 #             print("Finishing:", method, epsilon)
 #             torch.cuda.empty_cache()
 #             print("cleared")
-

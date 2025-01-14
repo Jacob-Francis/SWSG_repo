@@ -13,7 +13,7 @@ import numpy as np
 
 
 class SWSGSimulation:
-    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff=''):
+    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff=""):
         if cuda is None:
             self.device = "cpu"
             self.dtype = torch.DoubleTensor
@@ -32,9 +32,9 @@ class SWSGSimulation:
         if self.profile == "shallowjet":
             self.b = 5
         self.tol = tol
-        if suff == '_llody':
+        if suff == "_llody":
             self.lloyd = True
-        elif suff == '_nolloyd':
+        elif suff == "_nolloyd":
             self.lloyd = False
 
     def generate_case(self, epsilon, output_dir):
@@ -93,7 +93,7 @@ class SWSGSimulation:
             # Load pre-ran data of Lloyd fitting
             with open(result_file, "rb") as f:
                 result = pickle.load(f)
-        
+
             h_true = result["h_true"]
             h_true /= h_true.sum()
             Y = result["Y"]
@@ -119,7 +119,7 @@ class SWSGSimulation:
         print(f"Running simulation: {method}, ε={epsilon}, profile={self.profile}")
 
         X, Y, G, h_true = self.lloyd_or_not(result_file, epsilon)
-        
+
         X, Y, G, swsg_class, h_true = swsg_class_generate(
             X,
             Y,
@@ -130,6 +130,7 @@ class SWSGSimulation:
             epsilon=epsilon,
             cuda=self.device.index,
             tol=self.tol,
+            lloyd=self.llody,
         )
 
         tic = perf_counter_ns()
@@ -154,7 +155,7 @@ class SWSGSimulation:
             "error_list": error_list,
         }
 
-        suffix = '_llody' if self.lloyd else '_nolloyd'
+        suffix = "_llody" if self.lloyd else "_nolloyd"
         output_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_results{suffix}.pkl"
         with open(output_path, "wb") as f:
             pickle.dump(result, f)
@@ -214,7 +215,7 @@ class SWSGSimulation:
             )
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        suffix = '_llody' if self.lloyd else '_nolloyd'
+        suffix = "_llody" if self.lloyd else "_nolloyd"
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_lnormerrors{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(error_data, f)
@@ -381,7 +382,7 @@ class SWSGSimulation:
             print("fuck")
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        suffix = '_llody' if self.lloyd else '_nolloyd'
+        suffix = "_llody" if self.lloyd else "_nolloyd"
         error_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(method_data, f)
@@ -402,8 +403,7 @@ class SWSGSimulation:
                     dict1[key] = value
             return dict1
 
-
-        suffix = '_llody' if self.lloyd else '_nolloyd'
+        suffix = "_llody" if self.lloyd else "_nolloyd"
         main_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors"
         which = 1
         with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:
@@ -414,9 +414,7 @@ class SWSGSimulation:
                 dict1 = pickle.load(f)
             dict0 = merge_dicts(dict0, dict1)
 
-        error_path = (
-            f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors{suffix}.pkl"
-        )
+        error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(dict0, f)
         print(f"Error data saved to {error_path}")
