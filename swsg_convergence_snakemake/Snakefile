@@ -14,10 +14,10 @@ rule all:
     input:
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl", 
                method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}", 
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl", 
                method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
-               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
+        #        method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
         expand("data_store/temp/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs)
 
 
@@ -29,10 +29,6 @@ rule run_lloyd:
         d=1,
     shell:
         """
-        if [ -f "data_store/epsilon_{wildcards.epsilon}_profile_{wildcards.profile}_lloyd.pkl" ]; then
-            echo "File already exists, skipping simulation.";
-            exit 0;
-        fi
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
@@ -52,16 +48,12 @@ rule run_simulation:
         suff="_{suffix}"
     shell:
         """
-        if [ -f "data_store/{wildcards.method}_epsilon_{wildcards.epsilon}_profile_{wildcards.profile}_results{wildcards.suffix}.pkl" ]; then
-            echo "File already exists, skipping simulation.";
-            exit 0;
-        fi
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d}, suff={params.suff})
 sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
-'> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+'> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
 
 # Indepeden tof suffix, but needs to be re-ran for shallowjet
@@ -100,7 +92,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(profile="{params.profile}", d={params.d}, suff={params.suff})
 sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
-' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
 
 rule compute_w2_errors:
