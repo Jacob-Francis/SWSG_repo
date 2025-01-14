@@ -233,11 +233,12 @@ class SWSGSimulation:
         else:
             raise KeyError("Unknown profiel type")
 
-    def compute_dense_samples(self, a=0.1, b=10, c=0.5, d=1.0):
+    def compute_dense_samples(self, a=0.1, b=10, c=0.5, d=1.0, full=True):
         dense_epsilon = 0.002
         m1 = m2 = int(1 / 0.002)
 
         # Initialise the regular denisty - don't need to save as we can rerun anything
+  
         X = torch.cartesian_prod(
             torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
             torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
@@ -248,12 +249,17 @@ class SWSGSimulation:
         ).view(-1, 1)
         h_density /= h_density.sum()
 
-        return X, h_density
-
+        if full:
+            return X, h_density
+        else:
+            return (
+            torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
+            torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
+        ), h_density
     def compute_density_symmetric_potential(self, output_dir):
         ###############################################################
         ##############################################################
-        X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d)
+        X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d, full=False)
 
         # compute symmetric OT problem (balanced) and  sav full class.
         dense_symmetric_dict = compute_dense_symmetric_potential(
@@ -290,7 +296,7 @@ class SWSGSimulation:
         ############### Wasserstien Error ###############
         # Generate the dense mesh with 250 000 points.
         X_dense, h_true_dense = self.compute_dense_samples(
-            a=0.1, b=self.b, c=0.5, d=self.d
+            a=0.1, b=self.b, c=0.5, d=self.d, full=True
         )
 
         N = len(X[:, 0])
@@ -327,11 +333,15 @@ class SWSGSimulation:
         print("WHICH", which)
         if which == 1:
             print("here")
+            if self.lloyd:
+                mesh = _torch_numpy_process(Y)
+            else:
+                mesh = (Y[::N, 0], Y[:N, 1])
             s, uotclass = loss(
                 dense_weights,
                 dense_points,
                 uni_weights,
-                _torch_numpy_process(Y),
+                mesh,
                 None,
                 None,
             )
@@ -339,12 +349,12 @@ class SWSGSimulation:
             print("Oringal Se loss:", s)
         elif which == 2:
             print("nope")
-
+            # This can always be tensorised
             s, uotclass = loss(
-                dense_weights,
+                (X_dense[::N_dense, 0], X_dense[:N_dense, 1]),                                                  #dense_weights,
                 dense_points,
                 _torch_numpy_process(h / N),
-                _torch_numpy_process(X),
+                (X[::N, 0], X[:N, 1]),                                  # _torch_numpy_process(X),
                 None,
                 None,
             )

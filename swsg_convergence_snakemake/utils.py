@@ -667,6 +667,8 @@ def compute_dense_symmetric_potential(X, α, Y, β, cuda="cuda:0", force_type="p
     """
     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
     uotclass.parameters(epsilon=0.002)
+
+    # We can tensorise:
     uotclass.densities(X, Y, α, β)
 
     tic = perf_counter_ns()
@@ -684,7 +686,7 @@ def compute_dense_symmetric_potential(X, α, Y, β, cuda="cuda:0", force_type="p
     print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
     print(f"W2 Computed in {toc - tic} ns")
 
-    return dict(f=uotclass.g.cpu(), dual=sum(d))
+    return dict(f=uotclass.g.view(-1,1).cpu(), dual=sum(d))
 
 
 def compute_sinkhorn_divergence(
@@ -781,7 +783,7 @@ def Sinkhorn_Divergence_balanced(
         d = uotclass.dual_cost(force_type=force_type)
 
         print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
-        return dict(f=uotclass.g.cpu(), dual=sum(d))
+        return dict(f=uotclass.g.view(-1, 1).cpu(), dual=sum(d))
     else:
 
         # Run sinkhorn
