@@ -32,7 +32,7 @@ class SWSGSimulation:
         if self.profile == "shallowjet":
             self.b = 5
         self.tol = tol
-        if suff == "_llody":
+        if suff == "_lloyd":
             self.lloyd = True
         elif suff == "_nolloyd":
             self.lloyd = False
@@ -82,7 +82,7 @@ class SWSGSimulation:
             "h_true": h_true.cpu(),
         }
 
-        output_path = f"{output_dir}/epsilon_{epsilon}_profile_{self.profile}_llody.pkl"
+        output_path = f"{output_dir}/epsilon_{epsilon}_profile_{self.profile}_lloyd.pkl"
         with open(output_path, "wb") as f:
             pickle.dump(result, f)
         print(f"SimLlody evlation saved to {output_path}")
@@ -130,7 +130,7 @@ class SWSGSimulation:
             epsilon=epsilon,
             cuda=self.device.index,
             tol=self.tol,
-            lloyd=self.llody,
+            lloyd=self.lloyd,
         )
 
         tic = perf_counter_ns()
@@ -155,7 +155,7 @@ class SWSGSimulation:
             "error_list": error_list,
         }
 
-        suffix = "_llody" if self.lloyd else "_nolloyd"
+        suffix = "_lloyd" if self.lloyd else "_nolloyd"
         output_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_results{suffix}.pkl"
         with open(output_path, "wb") as f:
             pickle.dump(result, f)
@@ -215,7 +215,7 @@ class SWSGSimulation:
             )
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        suffix = "_llody" if self.lloyd else "_nolloyd"
+        suffix = "_lloyd" if self.lloyd else "_nolloyd"
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_lnormerrors{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(error_data, f)
@@ -382,7 +382,7 @@ class SWSGSimulation:
             print("fuck")
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        suffix = "_llody" if self.lloyd else "_nolloyd"
+        suffix = "_lloyd" if self.lloyd else "_nolloyd"
         error_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(method_data, f)
@@ -403,7 +403,7 @@ class SWSGSimulation:
                     dict1[key] = value
             return dict1
 
-        suffix = "_llody" if self.lloyd else "_nolloyd"
+        suffix = "_lloyd" if self.lloyd else "_nolloyd"
         main_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors"
         which = 1
         with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:

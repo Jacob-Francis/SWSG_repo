@@ -23,7 +23,7 @@ def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
     Llody fitting Y, beta to X, alpha, using geomloss. Tolerance at subsequent iterations aren't changing much.
     NOT a true convergence metric.
     """
-    llody_loss = SamplesLoss(
+    lloyd_loss = SamplesLoss(
         "sinkhorn", p=2, blur=blur, scaling=0.99, backend="multiscale"
     )
     err = 1e3
@@ -33,7 +33,7 @@ def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
     # Set up the tqdm progress bar
     with tqdm(total=kmax, desc="Llody Progress", unit="iter") as pbar:
         while err > tol and count < kmax:
-            L_ = llody_loss(beta, Y, alpha, X)
+            L_ = lloyd_loss(beta, Y, alpha, X)
             grad = torch.autograd.grad(L_, Y)[0]
 
             Y = Y - lr * grad * len(
@@ -46,7 +46,7 @@ def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
             pbar.update(1)
             pbar.set_postfix({"Error": err.item(), "Loss": L_.item()})
 
-    print("Final W2 loss:", llody_loss(beta, Y, alpha, X))
+    print("Final W2 loss:", lloyd_loss(beta, Y, alpha, X))
     return Y
 
 
