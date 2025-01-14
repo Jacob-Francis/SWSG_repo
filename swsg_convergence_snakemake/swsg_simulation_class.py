@@ -13,7 +13,7 @@ import numpy as np
 
 
 class SWSGSimulation:
-    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff=""):
+    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff="_lloyd"):
         if cuda is None:
             self.device = "cpu"
             self.dtype = torch.DoubleTensor
