@@ -108,7 +108,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=2, profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
-' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}.err
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
 
 rule combine_w2_errors:
