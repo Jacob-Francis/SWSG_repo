@@ -13,7 +13,7 @@ import numpy as np
 
 
 class SWSGSimulation:
-    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, lloyd=True):
+    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff=''):
         if cuda is None:
             self.device = "cpu"
             self.dtype = torch.DoubleTensor
@@ -32,7 +32,10 @@ class SWSGSimulation:
         if self.profile == "shallowjet":
             self.b = 5
         self.tol = tol
-        self.lloyd = lloyd
+        if suff == '_llody':
+            self.lloyd = True
+        elif suff == '_nolloyd':
+            self.lloyd = False
 
     def generate_case(self, epsilon, output_dir):
         """Run the simulation for a given method and ε, saving intermediate results."""
@@ -151,7 +154,7 @@ class SWSGSimulation:
             "error_list": error_list,
         }
 
-        suffix = '' if self.lloyd else '_nolloyd'
+        suffix = '_llody' if self.lloyd else '_nolloyd'
         output_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_results{suffix}.pkl"
         with open(output_path, "wb") as f:
             pickle.dump(result, f)
@@ -211,7 +214,7 @@ class SWSGSimulation:
             )
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        suffix = '' if self.lloyd else '_nolloyd'
+        suffix = '_llody' if self.lloyd else '_nolloyd'
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_lnormerrors{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(error_data, f)
@@ -378,7 +381,7 @@ class SWSGSimulation:
             print("fuck")
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
-        suffix = '' if self.lloyd else '_nolloyd'
+        suffix = '_llody' if self.lloyd else '_nolloyd'
         error_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(method_data, f)
@@ -400,7 +403,7 @@ class SWSGSimulation:
             return dict1
 
 
-        suffix = '' if self.lloyd else '_nolloyd'
+        suffix = '_llody' if self.lloyd else '_nolloyd'
         main_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors"
         which = 1
         with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:

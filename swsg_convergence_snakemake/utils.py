@@ -281,18 +281,15 @@ def initialisation(
         def int_h(x):
             return a * np.log(np.cosh(b * (x - 0.5)) / np.cosh(-b * 0.5)) / b + d * x
 
-        # find X_j s.t. universe weighting is 1/N
         # X_j = np.zeros(n1)
-        # for k, ui in enumerate(
-        #     d * np.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1, endpoint=True)
-        # ):
+        # for k, ui in enumerate(d * np.linspace(1 / n1, 1, n1, endpoint=True)):
         #     X_j[k] = optimize.root(lambda x: int_h(x) - ui, x0=0).x[0]
-        X_j = np.zeros(n1)
-        for k, ui in enumerate(d * np.linspace(1 / n1, 1, n1, endpoint=True)):
-            X_j[k] = optimize.root(lambda x: int_h(x) - ui, x0=0).x[0]
 
-        X_j[1:] = (X_j[:-1] + X_j[1:]) / 2
-        X_j[0] = X_j[0] / 2
+        # X_j[1:] = (X_j[:-1] + X_j[1:]) / 2
+        # X_j[0] = X_j[0] / 2
+
+        X_j = torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2)
+
 
         # Calculate nabla P: x + f^2 * g * partial h
         G_i = X_j + f**2 * g * a * b * (1 - np.tanh(b * (X_j - 0.5)) ** 2)
@@ -430,7 +427,12 @@ def swsg_class_generate(
     # torch.cuda.set_device(5)
     swsg_class.parameters(ε=epsilon, f=f, g=g)
     h_leb = torch.ones_like(X[:,0]) * d / len(X[:,0])
-    sigma = torch.ones_like(G[:,0]) * d / len(G[:,0])
+
+    if self.lloyd:
+        sigma = torch.ones_like(G[:,0]) * d / len(G[:,0])
+    else:
+        sigma = h_true / h_true.sum()
+
     swsg_class.densities(source_points=G.detach().cpu(), target_points=X.detach().cpu(), source_density=sigma.detach().cpu(), target_density=h_leb.detach().cpu())
 
     # assert (swsg_class.β_t == mu).all()
