@@ -133,6 +133,8 @@ class SWSGSimulation:
             lloyd=self.lloyd,
         )
 
+        print('TESTING', swsg_class.tensorise)
+
         tic = perf_counter_ns()
         φ, ψ, φ_s, ψ_s, grad_phi, grad_phi_debias, error_list = swsg_solver(
             swsg_class, method=method, tolerance=self.tol, lambert_tolerance=self.tol
@@ -328,18 +330,23 @@ class SWSGSimulation:
             tol=1e-12,
         )
         N = len(X)
+        n = int(np.sqrt(N))
         N_dense = len(X_dense)
+        n_dense = int(np.sqrt(N_dense))
 
-        print("WHICH", which)
+
+        print("WHICH",  which)
         if which == 1:
             print("here")
             if self.lloyd:
                 mesh = _torch_numpy_process(Y)
+                dense = dense_points
             else:
-                mesh = (Y[::N, 0], Y[:N, 1])
+                mesh = (_torch_numpy_process(Y[::n, 0]), _torch_numpy_process(Y[:n, 1]))
+                dense = (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1]))
             s, uotclass = loss(
                 dense_weights,
-                dense_points,
+                dense,
                 uni_weights,
                 mesh,
                 None,
@@ -351,10 +358,10 @@ class SWSGSimulation:
             print("nope")
             # This can always be tensorised
             s, uotclass = loss(
-                (X_dense[::N_dense, 0], X_dense[:N_dense, 1]),                                                  #dense_weights,
-                dense_points,
+                dense_weights,
+                (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1])),                                                  #dense_weights,
                 _torch_numpy_process(h / N),
-                (X[::N, 0], X[:N, 1]),                                  # _torch_numpy_process(X),
+                (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1])),                                  # _torch_numpy_process(X),
                 None,
                 None,
             )
