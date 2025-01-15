@@ -396,7 +396,7 @@ class SWSGSimulation:
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         suffix = "_lloyd" if self.lloyd else "_nolloyd"
-        error_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which{suffix}.pkl"
+        error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which{suffix}.pkl"
         with open(error_path, "wb") as f:
             pickle.dump(method_data, f)
         print(f"Error data saved to {error_path}")
@@ -417,7 +417,7 @@ class SWSGSimulation:
             return dict1
 
         suffix = "_lloyd" if self.lloyd else "_nolloyd"
-        main_path = f"{output_dir}/temp/{method}_epsilon_{epsilon}_profile_{self.profile}_errors"
+        main_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors"
         which = 1
         with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:
             dict0 = pickle.load(f)
