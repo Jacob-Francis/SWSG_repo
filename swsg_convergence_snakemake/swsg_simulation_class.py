@@ -133,8 +133,6 @@ class SWSGSimulation:
             lloyd=self.lloyd,
         )
 
-        print('TESTING', swsg_class.tensorise)
-
         tic = perf_counter_ns()
         φ, ψ, φ_s, ψ_s, grad_phi, grad_phi_debias, error_list = swsg_solver(
             swsg_class, method=method, tolerance=self.tol, lambert_tolerance=self.tol
@@ -227,6 +225,8 @@ class SWSGSimulation:
         self, x, f=1.0, g=0.1, a=0.1, b=10, c=0.5, d=1.0, profile_type="jet"
     ):
         if profile_type == "jet":
+            return a * np.tanh(self.b * (x - c)) + d
+        elif profile_type == "shallowjet":
             return a * np.tanh(self.b * (x - c)) + d
         elif profile_type == "incline":
             return a * self.b * (x - c) + d
