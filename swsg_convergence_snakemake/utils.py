@@ -509,10 +509,10 @@ def swsg_class_generate(
     lloyd=True,
 ):
     if cuda is None:
-        swsg_class = SWSGSinkNewton(pykeops=True, set_fail=True)
+        swsg_class = SWSGSinkNewton(pykeops=True, cuda_device='cpu')
     else:
         swsg_class = SWSGSinkNewton(
-            pykeops=True, set_fail=False, cuda_device=f"cuda:{cuda}"
+            pykeops=True, cuda_device=f"cuda:{cuda}"
         )
     # torch.cuda.set_device(5)
     swsg_class.parameters(ε=epsilon, f=f, g=g)
@@ -585,7 +585,6 @@ def swsg_run_halley_sinkhorn(swsg_class, lambert_tolerance=1e-12, tolerance=1e-1
 
     print("SWSG halley final:", output[0], " in ", output[2], " iterations ")
     swsg_class.debias_f = UnbalancedOT(
-        set_fail=swsg_class.set_fail,
         pykeops=swsg_class.pykeops,
         debias=False,
         cuda_device=swsg_class.device,
@@ -710,7 +709,6 @@ def compute_sinkhorn_divergence(
 
     # Solve the new symmetric potential problem
     uotclass.debias_g = UnbalancedOT(
-        set_fail=uotclass.set_fail,
         pykeops=uotclass.pykeops,
         debias=False,
         cuda_device=uotclass.device,
@@ -795,7 +793,6 @@ def Sinkhorn_Divergence_balanced(
 
         # solve the new symmetric potential problem
         uotclass.debias_g = UnbalancedOT(
-            set_fail=uotclass.set_fail,
             pykeops=uotclass.pykeops,
             debias=False,
             cuda_device=uotclass.device,
@@ -868,7 +865,6 @@ def Sinkhorn_Divergence_balanced(
 
 #         # solve the new symmetric potential problem
 #         uotclass.debias_g = UnbalancedOT(
-#             set_fail=uotclass.set_fail,
 #             pykeops=uotclass.pykeops,
 #             debias=False,
 #             cuda_device=uotclass.device,
