@@ -21,11 +21,7 @@ class SWSGSimulation:
             self.device = torch.device(
                 f"cuda:{cuda}" if torch.cuda.is_available() else "cpu"
             )
-            self.dtype = (
-                torch.cuda.DoubleTensor
-                if torch.cuda.is_available()
-                else torch.DoubleTensor
-            )
+            self.dtype = torch.float64
         self.profile = profile
         self.d = d
         self.b = b
