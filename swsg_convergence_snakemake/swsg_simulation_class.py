@@ -306,6 +306,8 @@ class SWSGSimulation:
 
         dense_weights = _torch_numpy_process(h_true_dense)
         dense_weights /= dense_weights.sum()
+        print('DENSE weight device', dense_weights.device, self.device)
+
         dense_points = _torch_numpy_process(X_dense)
 
         uni_weights = _torch_numpy_process(torch.ones_like(h))
