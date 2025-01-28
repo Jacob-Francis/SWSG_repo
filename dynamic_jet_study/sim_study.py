@@ -28,7 +28,6 @@ parser.add_argument("lloyd", type=str, help="lloyd or not")
 args = parser.parse_args()
 cuda = args.cuda
 epsilon = args.epsilon
-lloyd = args.lloyd
 # method = args.method
 
 
@@ -157,7 +156,7 @@ def jet2D_lloyd(device, dtype, epsilon=0.05, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5,
 global device
 device = f'cuda:{cuda}'
 
-if lloyd=='lloyd':
+if args.lloyd=='lloyd':
     X_xy, Y, G_xy, h_true, mu = jet2D_lloyd(device=device, dtype=torch.float64, epsilon=epsilon, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0, tol=1e-11)
 else:
     X_xy, Y, G_xy, h_true, mu = jet_profile_initialisation(epsilon=epsilon, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
@@ -170,7 +169,7 @@ for method in ['euler', 'heun', 'rk4']:
         d = 1.0
         h_leb = torch.ones_like(X_xy[:,0]) * d / len(X_xy[:,0])
         
-        if lloyd=='lloyd':
+        if args.lloyd=='lloyd':
             sigma = torch.ones_like(G_xy[:,0]) * d / len(G_xy[:,0])
         else:
             sigma = h_true / h_true.sum()
@@ -182,9 +181,9 @@ for method in ['euler', 'heun', 'rk4']:
         output = swsg_class.stepping_scheme(debias=True, dt=dt, method=method, time_steps=time_steps, tol=1e-11, newton_tol=1e-11, geoverse_velocities=True, collect_x_star= True, sinkhorn_divergence=True)
         toc = perf_counter_ns()
 
-        print('TIMING: ', toc-tic, f'data_store/output_{method}_{dt}_{epsilon}_{lloyd}.pkl')
+        print('TIMING: ', toc-tic, f'data_store/output_{method}_{dt}_{epsilon}_{args.lloyd}.pkl')
 
-        f = open(f'data_store/output_{method}_{dt}_{epsilon}_{lloyd}.pkl', 'wb')
+        f = open(f'data_store/output_{method}_{dt}_{epsilon}_{args.lloyd}.pkl', 'wb')
 
         pickle.dump(output, f)
 
