@@ -310,8 +310,11 @@ class SWSGSimulation:
 
         dense_points = _torch_numpy_process(X_dense)
 
-        uni_weights = _torch_numpy_process(torch.ones_like(h))
-        uni_weights /= uni_weights.sum()
+        if self.lloyd:
+            uni_weights = _torch_numpy_process(torch.ones_like(h))
+            uni_weights /= uni_weights.sum()
+        else:
+            uni_weights = h_true / h_true.sum()
 
         # Load data;
         with open(l_errors, "rb") as f:
