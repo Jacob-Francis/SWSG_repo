@@ -92,7 +92,7 @@ sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_fi
 rule compute_w2_errors:
     input:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
-        lloyd_file="data_store/epsilon_0.003125_profile_incline_lloyd.pkl",                         #epsilon_{epsilon}_profile_{profile}_lloyd.pkl,
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl",
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl",
         dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl"
     output:
