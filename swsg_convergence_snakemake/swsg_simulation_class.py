@@ -36,7 +36,7 @@ class SWSGSimulation:
     def u_g(x, a=0.1, c=0.5):
         if self.profile == 'uniform':
             return torch.zeros_like(x)
-        elif self.profile=='shallowjet' or self.profile=='jet:
+        elif self.profile=='shallowjet' or self.profile=='jet':
             temp = a*self.b*(1 - torch.tanh(self.b*(x-c))**2) 
             temp[:, 1] = 0 
             return temp
@@ -363,7 +363,7 @@ class SWSGSimulation:
             print('DENSE weight device', dense_weights.device, self.device)
 
             dense_points = _torch_numpy_process(X_dense)
-                    N_dense = len(X_dense)
+            N_dense = len(X_dense)
             n_dense = int(np.sqrt(N_dense))
             print("here")
             if self.lloyd:
