@@ -33,7 +33,7 @@ class SWSGSimulation:
         elif suff == "_nolloyd":
             self.lloyd = False
     
-    def u_g(x, a=0.1, c=0.5):
+    def u_g(self, x, a=0.1, c=0.5):
         if self.profile == 'uniform':
             return torch.zeros_like(x)
         elif self.profile=='shallowjet' or self.profile=='jet':
