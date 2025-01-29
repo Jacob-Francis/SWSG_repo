@@ -33,17 +33,17 @@ class SWSGSimulation:
         elif suff == "_nolloyd":
             self.lloyd = False
     
-    def u_g(self, x, a=0.1, c=0.5):
+    def u_g(self, x, a=0.1, c=0.5, g0=0.1):
         if self.profile == 'uniform':
-            return torch.zeros_like(x)
+            return g0*torch.zeros_like(x)
         elif self.profile=='shallowjet' or self.profile=='jet':
             temp = a*self.b*(1 - torch.tanh(self.b*(x-c))**2) 
             temp[:, 1] = 0 
-            return temp
+            return g0*temp
         elif self.profile=='incline':
             temp = torch.oness_like(x)*self.b*a
             temp[:, 1] = 0 
-            return temp
+            return g0*temp
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
