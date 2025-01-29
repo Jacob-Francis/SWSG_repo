@@ -8,10 +8,10 @@ suffixs = ['nolloyd'] #'lloyd',
 
 rule all:
     input:
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl", 
-               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl", 
-              method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl", 
+        #        method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl", 
+        #       method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
                method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs)
