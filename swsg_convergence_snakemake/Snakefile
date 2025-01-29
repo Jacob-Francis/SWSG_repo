@@ -1,20 +1,20 @@
 # Define the input data or parameters
 profiles = ["jet", "uniform", "incline", 'shallowjet']
 methods = ["one", "four"]
-epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
-whichs = [1, 2, 3, 4]
-suffixs = ['lloyd', 'nolloyd']
+epsilons = [0.05, 0.025, 0.0125] #, 0.00625, 0.003125]
+whichs = [1, 2, 3]
+suffixs = ['nolloyd'] #'lloyd',
 
 
 rule all:
     input:
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl", 
                method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        #expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl", 
-        #       method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
-        #        method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        #expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs)
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl", 
+              method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
+               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs)
 
 rule run_lloyd:
     output:

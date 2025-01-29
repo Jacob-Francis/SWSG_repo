@@ -32,6 +32,19 @@ class SWSGSimulation:
             self.lloyd = True
         elif suff == "_nolloyd":
             self.lloyd = False
+    
+    def u_g(x, a=0.1, c=0.5):
+        if self.profile == 'uniform':
+            return torch.zeros_like(x)
+        elif self.profile=='shallowjet' or self.profile=='jet:
+            temp = a*self.b*(1 - torch.tanh(self.b*(x-c))**2) 
+            temp[:, 1] = 0 
+            return temp
+        elif self.profile=='incline':
+            temp = torch.oness_like(x)*self.b
+            temp[:, 1] = 0 
+            return temp
+        #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
         """Run the simulation for a given method and ε, saving intermediate results."""
@@ -292,10 +305,7 @@ class SWSGSimulation:
             dense_symmetric_dict = pickle.load(f)
 
         ############### Wasserstien Error ###############
-        # Generate the dense mesh with 250 000 points.
-        X_dense, h_true_dense = self.compute_dense_samples(
-            a=0.1, b=self.b, c=0.5, d=self.d, full=True
-        )
+       
 
         N = len(X[:, 0])
         N_dense = len(X_dense[:, 0])
@@ -303,12 +313,6 @@ class SWSGSimulation:
         _torch_numpy_process = lambda x: torch.tensor(
             x, dtype=torch.float64, device=self.device
         )
-
-        dense_weights = _torch_numpy_process(h_true_dense)
-        dense_weights /= dense_weights.sum()
-        print('DENSE weight device', dense_weights.device, self.device)
-
-        dense_points = _torch_numpy_process(X_dense)
 
         if self.lloyd:
             uni_weights = _torch_numpy_process(torch.ones_like(h))
@@ -320,24 +324,47 @@ class SWSGSimulation:
         with open(l_errors, "rb") as f:
             method_data = pickle.load(f)
 
-        loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
-            x,
-            a,
-            y,
-            b,
-            f0=f0,
-            g0=g0,
-            dense_symmetric_potential=dense_symmetric_dict,
-            tol=1e-12,
-        )
         N = len(X)
         n = int(np.sqrt(N))
-        N_dense = len(X_dense)
-        n_dense = int(np.sqrt(N_dense))
 
-
+        # 1: u_g [l1, l2, linf]
         print("WHICH",  which)
         if which == 1:
+            for key, target in {
+                "bias": grad_phi,
+                "debias": debias_x_star,
+            }.items():
+                diff = G - target - self.u_g(target)
+                l1 = torch.linalg.norm(diff, ord=1) / N
+                l2 = torch.linalg.norm(diff, ord=2) / N**0.5
+                linf = torch.linalg.norm(diff, ord=float("inf")).item()
+                method_data[key]["u_g_error"] = dict(
+                    l1=l1.item(), l2=l2.item(), linf=linf
+                )
+        # ?: X true [l1, l2, linf] (Doesn't make sense for later time steps)
+        # 2: h reconstruction, S_eps (__, dense) [with orginal too?]
+        if which == 2:
+             # Generate the dense mesh with 250 000 points.
+            loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
+                x,
+                a,
+                y,
+                b,
+                f0=f0,
+                g0=g0,
+                dense_symmetric_potential=dense_symmetric_dict,
+                tol=1e-12,
+            )
+            X_dense, h_true_dense = self.compute_dense_samples(
+                a=0.1, b=self.b, c=0.5, d=self.d, full=True
+            )
+            dense_weights = _torch_numpy_process(h_true_dense)
+            dense_weights /= dense_weights.sum()
+            print('DENSE weight device', dense_weights.device, self.device)
+
+            dense_points = _torch_numpy_process(X_dense)
+                    N_dense = len(X_dense)
+            n_dense = int(np.sqrt(N_dense))
             print("here")
             if self.lloyd:
                 mesh = _torch_numpy_process(Y)
@@ -353,9 +380,9 @@ class SWSGSimulation:
                 None,
                 None,
             )
-            method_data["h_error"]["original"] = s
+            method_data["h_error"]["dense_original"] = s
             print("Oringal Se loss:", s)
-        elif which == 2:
+
             print("nope")
             # This can always be tensorised
             s, uotclass = loss(
@@ -363,42 +390,54 @@ class SWSGSimulation:
                 (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1])),                                                  #dense_weights,
                 _torch_numpy_process(h / N),
                 (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1])),                                  # _torch_numpy_process(X),
-                None,
-                None,
+                uotclass.f,
+                uotclass.g,
             )
-            method_data["h_error"]["W_error"] = s
+            method_data["h_error"]["dense_W_error"] = s
             print("h error", s)
-        elif which == 3:
-            print("damn")
 
-            # REgular debiased
+        # 3: h reconstruction, S_eps (__, fine mesh) [with orginal too?]
+        if which == 3:
+            loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
+                    x,
+                    a,
+                    y,
+                    b,
+                    f0=f0,
+                    g0=g0,
+                    dense_symmetric_potential=None,
+                    tol=1e-12,
+                    epsilon=epsilon,
+                    fullcompute=True
+                )
+            if self.lloyd:
+                mesh = _torch_numpy_process(Y)
+            else:
+                mesh = (_torch_numpy_process(Y[::n, 0]), _torch_numpy_process(Y[:n, 1]))
             s, uotclass = loss(
-                dense_weights,
-                dense_points,
                 uni_weights,
-                _torch_numpy_process(debias_x_star),
+                mesh,
+                uni_weights,
+                mesh,
                 None,
                 None,
             )
-            method_data["debias"]["W_error_regular"] = s
-            print("regular debiased", s)
-        elif which == 4:
-            print("humm")
+            method_data["h_error"]["fine_original"] = s
+            print("Oringal Se loss:", s)
 
-            # Regular biased
+            print("nope")
+            # This can always be tensorised
             s, uotclass = loss(
-                dense_weights,
-                dense_points,
                 uni_weights,
-                _torch_numpy_process(grad_phi),
+                mesh,                                                  #dense_weights,
+                _torch_numpy_process(h / N),
+                (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1])),                                  # _torch_numpy_process(X),
                 None,
                 None,
             )
-            method_data["bias"]["W_error_regular"] = s
-            print("regular bias", s)
-        else:
-            print("fuck")
-
+            method_data["h_error"]["fine_W_error"] = s
+            print("h error", s)
+            
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         suffix = "_lloyd" if self.lloyd else "_nolloyd"
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which{suffix}.pkl"
@@ -427,7 +466,7 @@ class SWSGSimulation:
         with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:
             dict0 = pickle.load(f)
 
-        for which in [2, 3, 4]:
+        for which in [2, 3]:
             with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:
                 dict1 = pickle.load(f)
             dict0 = merge_dicts(dict0, dict1)

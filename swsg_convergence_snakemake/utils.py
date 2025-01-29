@@ -755,6 +755,8 @@ def Sinkhorn_Divergence_balanced(
     g0=None,
     force_type="pykeops",
     tol=1e-12,
+    epsilon=0.002,
+    fullcompute=False
 ):
     """
     # Run OT(a, b) on grid X, Y reusing the dense symmeric potential and cost
@@ -763,11 +765,11 @@ def Sinkhorn_Divergence_balanced(
     """
     cuda = α.device
     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
-    uotclass.parameters(epsilon=0.002)
+    uotclass.parameters(epsilon=epsilon)
     uotclass.densities(X, Y, α, β)
 
     tic = perf_counter_ns()
-    if dense_symmetric_potential is None:
+    if dense_symmetric_potential is None and not fullcompute:
 
         f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
             tol=tol,
@@ -781,6 +783,14 @@ def Sinkhorn_Divergence_balanced(
 
         print("DENSE symmetric update final convergence:", f_update, g_update, i_sup)
         return dict(f=uotclass.g.view(-1, 1).cpu(), dual=sum(d))
+    elif fullcompute:
+        f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
+            f0=f0, g0=g0, aprox="balanced", tol=tol
+        )
+        print("Sinkhorn full compute final convergence:", f_update, g_update, i_sup)
+        print(f"W2 Computed in {toc-tic} ns")
+        s = uotclass.sinkhorn_divergence(tol=tol, force_type='pykeops', return_type='dual')
+        return s.cpu().item(), uotclass
     else:
 
         # Run sinkhorn
