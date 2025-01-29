@@ -308,7 +308,6 @@ class SWSGSimulation:
        
 
         N = len(X[:, 0])
-        N_dense = len(X_dense[:, 0])
 
         _torch_numpy_process = lambda x: torch.tensor(
             x, dtype=torch.float64, device=self.device
