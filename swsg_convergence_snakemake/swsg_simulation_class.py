@@ -284,11 +284,11 @@ class SWSGSimulation:
         print(f"Dense data saved to {error_path}")
 
     def compute_W2_errors(
-        self, method, epsilon, result_file, l_errors, output_dir, which=1
+        self, method, epsilon, result_file, lloyd_file, l_errors, output_dir, which=1
     ):
         """Compute norms and Wasserstein distances using saved simulation results."""
         print(f"Computing errors for: {method}, ε={epsilon}")
-        lloyd_file = None
+
         # Load saved simulation results
         with open(result_file, "rb") as f:
             result = pickle.load(f)
