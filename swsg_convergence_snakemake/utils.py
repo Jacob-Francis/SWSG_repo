@@ -788,7 +788,6 @@ def Sinkhorn_Divergence_balanced(
             f0=f0, g0=g0, aprox="balanced", tol=tol
         )
         print("Sinkhorn full compute final convergence:", f_update, g_update, i_sup)
-        print(f"W2 Computed in {toc-tic} ns")
         s = uotclass.sinkhorn_divergence(tol=tol, force_type='pykeops', return_type='dual')
         return s.cpu().item(), uotclass
     else:
