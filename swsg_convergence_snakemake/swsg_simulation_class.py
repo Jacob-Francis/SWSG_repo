@@ -41,7 +41,7 @@ class SWSGSimulation:
             temp[:, 1] = 0 
             return g0*temp
         elif self.profile=='incline':
-            temp = torch.oness_like(x)*self.b*a
+            temp = torch.ones_like(x)*self.b*a
             temp[:, 1] = 0 
             return g0*temp
         #######################################################################################################################
