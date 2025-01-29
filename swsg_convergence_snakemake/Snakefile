@@ -1,7 +1,7 @@
 # Define the input data or parameters
 profiles = ["jet", "uniform", "incline", 'shallowjet']
 methods = ["one", "four"]
-epsilons = [0.05, 0.025, 0.0125] #, 0.00625, 0.003125]
+epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
 whichs = [1, 2, 3]
 suffixs = ['nolloyd'] #'lloyd',
 
@@ -92,7 +92,7 @@ sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_fi
 rule compute_w2_errors:
     input:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
-        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl",
+        # lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl",
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl",
         dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl"
     output:
@@ -108,7 +108,7 @@ rule compute_w2_errors:
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d}, suff="{params.suff}")
-sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
+sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
 
