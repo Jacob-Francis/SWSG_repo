@@ -41,7 +41,7 @@ class SWSGSimulation:
             temp[:, 1] = 0 
             return temp
         elif self.profile=='incline':
-            temp = torch.oness_like(x)*self.b
+            temp = torch.oness_like(x)*self.b*a
             temp[:, 1] = 0 
             return temp
         #######################################################################################################################
@@ -305,7 +305,7 @@ class SWSGSimulation:
             dense_symmetric_dict = pickle.load(f)
 
         ############### Wasserstien Error ###############
-       
+
 
         N = len(X[:, 0])
 
