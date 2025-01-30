@@ -785,7 +785,9 @@ def Sinkhorn_Divergence_balanced(
         return dict(f=uotclass.g.view(-1, 1).cpu(), dual=sum(d))
     elif fullcompute:
         f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-            f0=f0, g0=g0, aprox="balanced", tol=tol
+            f0=f0, g0=g0, aprox="balanced", tol=tol, converge_or_fail=True, convergence_repeats=3,
+
+
         )
         print("Sinkhorn full compute final convergence:", f_update, g_update, i_sup)
         s = uotclass.sinkhorn_divergence(tol=tol, force_type='pykeops', return_type='dual')
@@ -794,7 +796,7 @@ def Sinkhorn_Divergence_balanced(
 
         # Run sinkhorn
         f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-            f0=f0, g0=g0, aprox="balanced", tol=tol
+            f0=f0, g0=g0, aprox="balanced", tol=tol, converge_or_fail=True, convergence_repeats=3,
         )
 
         print("Sinkhorn update final convergence:", f_update, g_update, i_sup)
