@@ -790,7 +790,7 @@ def Sinkhorn_Divergence_balanced(
             )
         except RuntimeWarning:
             f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=True, epsilon_annealing=True,
+                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=False, epsilon_annealing=True,
             )
         print("Sinkhorn full compute final convergence:", f_update, g_update, i_sup)
         s = uotclass.sinkhorn_divergence(tol=tol, force_type='pykeops', return_type='dual')
@@ -804,7 +804,7 @@ def Sinkhorn_Divergence_balanced(
             )
         except RuntimeWarning:
             f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=True, epsilon_annealing=True,
+                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=False, epsilon_annealing=True,
             )
 
         print("Sinkhorn update final convergence:", f_update, g_update, i_sup)
