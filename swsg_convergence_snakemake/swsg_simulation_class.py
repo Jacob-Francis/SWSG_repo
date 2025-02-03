@@ -340,6 +340,13 @@ class SWSGSimulation:
                 method_data[key]["u_g_error"] = dict(
                     l1=l1.item(), l2=l2.item(), linf=linf
                 )
+                diff = G - target - self.u_g(X)
+                l1 = torch.linalg.norm(diff, ord=1) / N
+                l2 = torch.linalg.norm(diff, ord=2) / N**0.5
+                linf = torch.linalg.norm(diff, ord=float("inf")).item()
+                method_data[key]["u_g_error_true"] = dict(
+                    l1=l1.item(), l2=l2.item(), linf=linf
+                )
         # ?: X true [l1, l2, linf] (Doesn't make sense for later time steps)
         # 2: h reconstruction, S_eps (__, dense) [with orginal too?]
         if which == 2:
