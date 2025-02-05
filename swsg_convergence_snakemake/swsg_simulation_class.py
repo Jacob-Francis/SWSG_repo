@@ -35,15 +35,15 @@ class SWSGSimulation:
     
     def u_g(self, x, a=0.1, c=0.5, g0=0.1):
         if self.profile == 'uniform':
-            return g0*torch.zeros_like(x)
+            return -g0*torch.zeros_like(x)
         elif self.profile=='shallowjet' or self.profile=='jet':
-            temp = a*self.b*(1 - torch.tanh(self.b*(x-c))**2) 
-            temp[:, 1] = 0 
-            return g0*temp
+            temp = torch.zeros_like(x)
+            temp[:, 0] = a*self.b*(1 - torch.tanh(self.b*(x[:, 1]-c))**2) 
+            return -g0*temp
         elif self.profile=='incline':
             temp = torch.ones_like(x)*self.b*a
             temp[:, 1] = 0 
-            return g0*temp
+            return -g0*temp
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
@@ -325,6 +325,26 @@ class SWSGSimulation:
 
         N = len(X)
         n = int(np.sqrt(N))
+        def periodic_g_x_vel(Gt, Xtilde, dt, L=1.0, periodic=True):
+            """
+            Periodic boundary reconsruciton give, periodic in x
+            """
+            # rotate
+            x_component = -(Gt[:, 1] - Xtilde[:, 1])  
+            y_component  = (Gt[:, 0] - Xtilde[:, 0])
+
+            if periodic:
+                # Stack the x_component and apply periodic boundary condition
+                stacked_x = torch.stack([x_component, x_component + L, x_component - L], dim=-1)
+
+                # Find the closest value with the minimum absolute difference
+                min_diff_indices = torch.abs(stacked_x).min(dim=-1).indices
+
+                # Select the correct x_component based on the minimum absolute difference
+                x_component = stacked_x.gather(dim=-1, index=min_diff_indices.unsqueeze(-1)).squeeze(-1)
+
+
+            return torch.stack([x_component, y_component], dim=-1) /dt
 
         # 1: u_g [l1, l2, linf]
         print("WHICH",  which)
@@ -345,6 +365,14 @@ class SWSGSimulation:
                 l2 = torch.linalg.norm(diff, ord=2) / N**0.5
                 linf = torch.linalg.norm(diff, ord=float("inf")).item()
                 method_data[key]["u_g_error_true"] = dict(
+                    l1=l1.item(), l2=l2.item(), linf=linf
+                )
+                
+                diff = periodic_g_x_vel(G, target, 1, L=1.0, periodic=False) - self.u_g(X)
+                l1 = torch.linalg.norm(diff, ord=1) / N
+                l2 = torch.linalg.norm(diff, ord=2) / N**0.5
+                linf = torch.linalg.norm(diff, ord=float("inf")).item()
+                method_data[key]["u_g_error_j_true"] = dict(
                     l1=l1.item(), l2=l2.item(), linf=linf
                 )
         # ?: X true [l1, l2, linf] (Doesn't make sense for later time steps)
