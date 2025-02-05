@@ -17,7 +17,7 @@ from lambertw import _residual as _lambw_res
 from geomloss import SamplesLoss
 from tqdm import tqdm  # Import tqdm for the progress bar
 
-def normal_pdf(x, y, mu_x, mu_y, sigma,alpha=0.0001):
+def normal_pdf(x, y, mu_x, mu_y, sigma,strength=0.0001):
     """
     Calculate the PDF of a bivariate normal distribution.
     """
