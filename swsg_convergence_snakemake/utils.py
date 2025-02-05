@@ -22,6 +22,7 @@ def normal_pdf(x, y, mu_x, mu_y, sigma,strength=0.0001):
     Calculate the PDF of a bivariate normal distribution.
     """
     # Constants
+    alpha = strength
     sigma2 = torch.tensor([sigma**2])
     mu_x_ = torch.tensor([mu_x])
     mu_y_ = torch.tensor([mu_y])
