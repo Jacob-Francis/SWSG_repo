@@ -556,7 +556,7 @@ def initialisation(
         X, Y, G, h_true, mu = uniform2D_lloyd(
             device, dtype, epsilon, f, g, a, b, c, d, tol=tol
         )
-    elif profile_type == 'perturbed_jet':
+    elif profile_type == 'perturbedjet':
         X, Y, G, h_true, mu = jet_profile_initialisation(epsilon, strength=0.0001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
 
     return X, Y, G, h_true

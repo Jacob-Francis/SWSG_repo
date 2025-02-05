@@ -45,7 +45,7 @@ class SWSGSimulation:
             temp = torch.ones_like(x)*self.b*a
             temp[:, 1] = 0 
             return -g0*temp
-        elif self.profile == 'perturbed_jet':
+        elif self.profile == 'perturbedjet':
             temp = torch.zeros_like(x)
             temp[:, 0] = a*self.b*(1 - torch.tanh(self.b*(x[:, 1]-c))**2) 
 
@@ -251,7 +251,7 @@ class SWSGSimulation:
             return a * self.b * (x[:, 1] - c) + d
         elif profile_type == "uniform":
             return torch.ones_like(x[:, 1]) / len(x[:, 1])
-        elif profile_type == "perturbed_jet":
+        elif profile_type == "perturbedjet":
             temp = a * np.tanh(self.b * (x[:, 1] - c)) + d
             no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
             temp = temp  + no
