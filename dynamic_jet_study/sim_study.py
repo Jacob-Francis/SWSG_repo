@@ -31,7 +31,7 @@ args = parser.parse_args()
 cuda = args.cuda
 epsilon = args.epsilon
 strength = args.strength
-meth = arg.method
+meth = args.method
 
 
 def normal_pdf(x, y, mu_x, mu_y, sigma,alpha):
@@ -117,7 +117,7 @@ else:
     methods = ['euler', 'heun','rk4']
 
 for method in methods:
-    for dt in [0.4, 0.2, 0.1, 0.05]:
+    for dt in [0.4, 0.2, 0.1, 0.05]:   #
         print(f'Starting: output_{method}_{dt}_{epsilon}')
         swsg_class = SWSGDynamcis(pykeops=True, cuda_device=device)
         swsg_class.parameters(ε=epsilon, f=1.0, g=0.1)
@@ -133,7 +133,7 @@ for method in methods:
         output = swsg_class.stepping_scheme(debias=True, dt=dt, method=method, time_steps=time_steps, tol=1e-11, newton_tol=1e-11, geoverse_velocities=True, collect_x_star= True, sinkhorn_divergence=True)
         toc = perf_counter_ns()
 
-        print('TIMING: ', toc-tic, f'data_store/output_{method}_{dt}_{epsilon}_{args.lloyd}.pkl')
+        print('TIMING: ', toc-tic, f'data_store/output_{method}_{dt}_{epsilon}_{strength}.pkl')
 
         f = open(f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'wb')
 
