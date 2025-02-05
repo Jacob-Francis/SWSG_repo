@@ -17,6 +17,73 @@ from lambertw import _residual as _lambw_res
 from geomloss import SamplesLoss
 from tqdm import tqdm  # Import tqdm for the progress bar
 
+def normal_pdf(x, y, mu_x, mu_y, sigma,alpha=0.0001):
+    """
+    Calculate the PDF of a bivariate normal distribution.
+    """
+    # Constants
+    sigma2 = torch.tensor([sigma**2])
+    mu_x_ = torch.tensor([mu_x])
+    mu_y_ = torch.tensor([mu_y])
+    
+    norm_factor = 1 / (2 * torch.pi * sigma2) #_x * sigma_y * torch.sqrt(1 - rho ** 2))   
+    # Z computation
+    z_x = (x - mu_x_) 
+    z_y = (y - mu_y_) 
+    
+    z = z_x**2  + z_y ** 2 
+    
+    # PDF computation
+    pdf = alpha*norm_factor * torch.exp(-0.5 * z/sigma2)
+    pdfg0 = -alpha* z_x/sigma2 *norm_factor * torch.exp(-0.5 * z/sigma2)
+    pdfg1 = -alpha* z_y/sigma2 *norm_factor * torch.exp(-0.5 * z/sigma2)
+    
+    return pdf.unsqueeze(-1), pdfg0  , pdfg1
+
+def jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0, pykeop=True):
+    """
+    Initialise a jet profile and associated object for solving the sWSG problem.
+    """
+    # Decide on parameters
+    global n1, n2, m1, m2
+    n1, n2 = int(1 / epsilon), int(1 / epsilon)
+    m1, m2 = int(1 / epsilon), int(1 / epsilon)
+
+    # Assigning uniform weighting to points - Lloyde type
+    def height_func(x):
+        return a * np.tanh(b * (x - c)) + d
+
+    # integral of tanh is ln(cosh) so;
+    def int_h(x):
+        return a * np.log(np.cosh(b * (x - 0.5)) / np.cosh(-b * 0.5)) / b + d*x
+
+    X_j = torch.linspace(1 / (2 * n1), 1 - 1 / (2 * n1), n1)
+
+    # Calculate nabla P: x + f^2 * g * partial h
+    G_i = X_j + f**2 * g * a * b * (1 - np.tanh(b * (X_j - 0.5)) ** 2)
+
+    # Tile the 1D into a 2D profile
+    X = torch.cartesian_prod(
+        torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
+        torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
+    )
+    Y = torch.cartesian_prod(
+        torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2), torch.Tensor(X_j)
+    )
+    G = torch.cartesian_prod(
+        torch.linspace(1 / (2 * n2), 1 - 1 / (2 * n2), n2), torch.Tensor(G_i)
+    )
+
+    h_true = height_func(X[:, 1]).view(-1, 1)
+    mu = torch.ones_like(h_true) * d  / len(X[:, 1])
+
+    no, no0 , no1  = normal_pdf(X[:,0],X[:,1],0.5,0.3,0.1,strength)  ## 0 is stationnary 
+    h_true = h_true  + no 
+    h_true = h_true.div(torch.sum(h_true)) 
+    G = G + torch.stack((no0, no1), dim=1)
+
+    return X, Y, G, h_true, mu
+
 
 def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
     """
@@ -489,6 +556,8 @@ def initialisation(
         X, Y, G, h_true, mu = uniform2D_lloyd(
             device, dtype, epsilon, f, g, a, b, c, d, tol=tol
         )
+    elif profile_type == 'perturbed_jet':
+        X, Y, G, h_true, mu = jet_profile_initialisation(epsilon, strength=0.0001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
 
     return X, Y, G, h_true
 

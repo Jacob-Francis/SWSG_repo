@@ -6,6 +6,7 @@ from utils import (
     swsg_class_generate,
     compute_dense_symmetric_potential,
     Sinkhorn_Divergence_balanced,
+    normal_pdf
 )
 from time import perf_counter_ns
 from geomloss import SamplesLoss
@@ -44,6 +45,14 @@ class SWSGSimulation:
             temp = torch.ones_like(x)*self.b*a
             temp[:, 1] = 0 
             return -g0*temp
+        elif self.profile == 'perturbed_jet':
+            temp = torch.zeros_like(x)
+            temp[:, 0] = a*self.b*(1 - torch.tanh(self.b*(x[:, 1]-c))**2) 
+
+            no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
+            temp = temp + torch.stack((no0, no1), dim=1)
+        
+            raise NotImplementedError
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
@@ -81,6 +90,7 @@ class SWSGSimulation:
             )
         toc = perf_counter_ns()
 
+        if self.lloyd:
         print(f"Lloyd generation completed for {self.profile}: {toc - tic} ns")
 
         # Save intermediate results to file
@@ -234,15 +244,20 @@ class SWSGSimulation:
         self, x, f=1.0, g=0.1, a=0.1, b=10, c=0.5, d=1.0, profile_type="jet"
     ):
         if profile_type == "jet":
-            return a * np.tanh(self.b * (x - c)) + d
+            return a * np.tanh(self.b * (x[:, 1] - c)) + d
         elif profile_type == "shallowjet":
-            return a * np.tanh(self.b * (x - c)) + d
+            return a * np.tanh(self.b * (x[:, 1] - c)) + d
         elif profile_type == "incline":
-            return a * self.b * (x - c) + d
+            return a * self.b * (x[:, 1] - c) + d
         elif profile_type == "uniform":
-            return torch.ones_like(x) / len(x)
+            return torch.ones_like(x[:, 1]) / len(x[:, 1])
+        elif profile_type == "perturbed_jet":
+            temp = a * np.tanh(self.b * (x[:, 1] - c)) + d
+            no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
+            temp = temp  + no
+            raise temp
         else:
-            raise KeyError("Unknown profiel type")
+            raise KeyError("Unknown profile type")
 
     def compute_dense_samples(self, a=0.1, b=10, c=0.5, d=1.0, full=True):
         dense_epsilon = 0.002
@@ -256,7 +271,7 @@ class SWSGSimulation:
         )
 
         h_density = self.height_func(
-            X[:, 1], a=a, b=self.b, c=c, d=d, profile_type=self.profile
+            X, a=a, b=self.b, c=c, d=d, profile_type=self.profile
         ).view(-1, 1)
         h_density /= h_density.sum()
 
