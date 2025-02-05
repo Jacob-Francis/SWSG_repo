@@ -1,5 +1,5 @@
 # Define the input data or parameters
-profiles = ["jet", "uniform", "incline", 'shallowjet']
+profiles = ["jet", "uniform", "incline", 'shallowjet', 'perturbed_jet']
 methods = ["one", "four"]
 epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
 whichs = [1, 2, 3]
