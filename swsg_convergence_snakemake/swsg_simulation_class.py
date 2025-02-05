@@ -91,7 +91,7 @@ class SWSGSimulation:
         toc = perf_counter_ns()
 
         if self.lloyd:
-        print(f"Lloyd generation completed for {self.profile}: {toc - tic} ns")
+            print(f"Lloyd generation completed for {self.profile}: {toc - tic} ns")
 
         # Save intermediate results to file
         result = {
