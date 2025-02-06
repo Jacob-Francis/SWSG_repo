@@ -286,7 +286,7 @@ class SWSGSimulation:
         ), h_density
     
     def mesh4D(self, G, X):
-        return torch.hstack((G, periodic_g_x_vel(G-X)))
+        return torch.hstack((G, periodic_g_x_vel(G, X, 1, periodic=False)))
 
     def compute_4Ddense_samples(self, ):
         
