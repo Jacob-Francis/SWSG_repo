@@ -50,7 +50,7 @@ rule run_simulation:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim = SWSGSimulation(cuda=int(ord(f[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
 '> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
