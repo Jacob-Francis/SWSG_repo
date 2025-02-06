@@ -1,21 +1,24 @@
 # Define the input data or parameters
-profiles = ["jet", "uniform", "incline", 'shallowjet', 'perturbedjet']
+profiles = ["jet", "uniform", "incline", 'shallowjet'] #, 'perturbedjet']
 methods = ["one", "four"]
 epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
 whichs = [1, 2, 3]
 suffixs = ['nolloyd'] #'lloyd',
 
-
+# To Do rerun results and dense symmetric potentials; Then I can check scaling for perturbedjet case
+# and implement the full 4D check
 
 rule all:
     input:
-        # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl", 
-        #        method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl", 
+               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        expand("data_store/dense_sym_profile_{profile}_dict.pkl", profile=profiles),
+        expand("data_store/dense_sym_profile_{profile}_dict.pkl", profile=profiles),
         # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl", 
         #       method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
-               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs)
+        # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
+        #        method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        # expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs)
 
 rule run_lloyd:
     output:
@@ -66,6 +69,22 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=1, profile="{params.profile}", d={params.d})
 sim.compute_density_symmetric_potential(output_dir="data_store")
+'> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
+        """
+
+rule run_4Ddense_sym:
+    output:
+        dense_4dsym_dict="data_store/dense_4D_sym_profile_{profile}_dict.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=2, profile="{params.profile}", d={params.d})
+sim.compute_4D_density_symmetric_potential(output_dir="data_store")
 '> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
         """
 

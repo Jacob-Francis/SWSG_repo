@@ -86,6 +86,28 @@ def jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c
     return X, Y, G, h_true, mu
 
 
+def periodic_g_x_vel(Gt, Xtilde, dt, L=1.0, periodic=True):
+    """
+    J rotation essentially
+    Periodic boundary reconsruciton give, periodic in x
+    """
+    # rotate
+    x_component = -(Gt[:, 1] - Xtilde[:, 1])  
+    y_component  = (Gt[:, 0] - Xtilde[:, 0])
+
+    if periodic:
+        # Stack the x_component and apply periodic boundary condition
+        stacked_x = torch.stack([x_component, x_component + L, x_component - L], dim=-1)
+
+        # Find the closest value with the minimum absolute difference
+        min_diff_indices = torch.abs(stacked_x).min(dim=-1).indices
+
+        # Select the correct x_component based on the minimum absolute difference
+        x_component = stacked_x.gather(dim=-1, index=min_diff_indices.unsqueeze(-1)).squeeze(-1)
+
+
+    return torch.stack([x_component, y_component], dim=-1) /dt
+
 def lloyd(blur, X, Y, alpha=None, beta=None, tol=1e-11, lr=0.9):
     """
     Llody fitting Y, beta to X, alpha, using geomloss. Tolerance at subsequent iterations aren't changing much.

@@ -6,7 +6,8 @@ from utils import (
     swsg_class_generate,
     compute_dense_symmetric_potential,
     Sinkhorn_Divergence_balanced,
-    normal_pdf
+    normal_pdf,
+    periodic_g_x_vel
 )
 from time import perf_counter_ns
 from geomloss import SamplesLoss
@@ -283,6 +284,19 @@ class SWSGSimulation:
             torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
             torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
         ), h_density
+    
+    def mesh4D(self, G, X):
+        return torch.hstack((G, periodic_g_x_vel(G-X)))
+
+    def compute_4Ddense_samples(self, ):
+        
+        dense_epsilon = 0.002
+
+        # Initialise the regular denisty - don't need to save as we can rerun anything
+        X, Y, G, h_density = self.lloyd_or_not(None, dense_epsilon)
+
+        # Create 4D mesh:
+        return self.mesh4D(G, X), h_density / h_density.sum()
 
     def compute_density_symmetric_potential(self, output_dir):
         ###############################################################
@@ -299,6 +313,23 @@ class SWSGSimulation:
         with open(error_path, "wb") as f:
             pickle.dump(dense_symmetric_dict, f)
         print(f"Dense data saved to {error_path}")
+    
+    
+    def compute_4D_density_symmetric_potential(self, output_dir):
+        ###############################################################
+        ##############################################################
+        X, h_density = self.compute_4Ddense_samples()
+
+        # compute symmetric OT problem (balanced) and  sav full class.
+        dense_symmetric_dict = compute_dense_symmetric_potential(
+            X, h_density, X, h_density, self.device
+        )
+
+        # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
+        error_path = f"{output_dir}/dense_4D_sym_profile_{self.profile}_dict.pkl"
+        with open(error_path, "wb") as f:
+            pickle.dump(dense_symmetric_dict, f)
+        print(f"Dense 4D data saved to {error_path}")
 
     def compute_W2_errors(
         self, method, epsilon, result_file, lloyd_file, l_errors, output_dir, which=1
@@ -342,26 +373,6 @@ class SWSGSimulation:
 
         N = len(X)
         n = int(np.sqrt(N))
-        def periodic_g_x_vel(Gt, Xtilde, dt, L=1.0, periodic=True):
-            """
-            Periodic boundary reconsruciton give, periodic in x
-            """
-            # rotate
-            x_component = -(Gt[:, 1] - Xtilde[:, 1])  
-            y_component  = (Gt[:, 0] - Xtilde[:, 0])
-
-            if periodic:
-                # Stack the x_component and apply periodic boundary condition
-                stacked_x = torch.stack([x_component, x_component + L, x_component - L], dim=-1)
-
-                # Find the closest value with the minimum absolute difference
-                min_diff_indices = torch.abs(stacked_x).min(dim=-1).indices
-
-                # Select the correct x_component based on the minimum absolute difference
-                x_component = stacked_x.gather(dim=-1, index=min_diff_indices.unsqueeze(-1)).squeeze(-1)
-
-
-            return torch.stack([x_component, y_component], dim=-1) /dt
 
         # 1: u_g [l1, l2, linf]
         print("WHICH",  which)
@@ -395,7 +406,7 @@ class SWSGSimulation:
         # ?: X true [l1, l2, linf] (Doesn't make sense for later time steps)
         # 2: h reconstruction, S_eps (__, dense) [with orginal too?]
         if which == 2:
-             # Generate the dense mesh with 250 000 points.
+            # Generate the dense mesh with 250 000 points.
             loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
                 x,
                 a,
@@ -488,6 +499,73 @@ class SWSGSimulation:
             )
             method_data["h_error"]["fine_W_error"] = s
             print("h error", s)
+        # Phase space error metric
+        if which == 4:
+
+            # Generate the dense mesh with 250 000 points.
+            loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
+                x,
+                a,
+                y,
+                b,
+                f0=f0,
+                g0=g0,
+                dense_symmetric_potential=dense_symmetric_dict,
+                tol=1e-12,
+            )
+
+            for key, target in {
+                "bias": grad_phi,
+                "debias": debias_x_star,
+            }.items():
+                diff = periodic_g_x_vel(G, target, 1, L=1.0, periodic=False) - self.u_g(X)
+                l1 = torch.linalg.norm(diff, ord=1) / N
+                l2 = torch.linalg.norm(diff, ord=2) / N**0.5
+                linf = torch.linalg.norm(diff, ord=float("inf")).item()
+                method_data[key]["u_g_error_j_true"] = dict(
+                    l1=l1.item(), l2=l2.item(), linf=linf
+                )
+                
+                X_dense, h_true_dense = self.compute_dense_samples(
+                    a=0.1, b=self.b, c=0.5, d=self.d, full=True
+                )
+                dense_weights = _torch_numpy_process(h_true_dense)
+                dense_weights /= dense_weights.sum()
+                print('DENSE weight device', dense_weights.device, self.device)
+
+                dense_points = _torch_numpy_process(X_dense)
+                N_dense = len(X_dense)
+                n_dense = int(np.sqrt(N_dense))
+                print("here")
+                if self.lloyd:
+                    mesh = _torch_numpy_process(Y)
+                    dense = dense_points
+                else:
+                    mesh = (_torch_numpy_process(Y[::n, 0]), _torch_numpy_process(Y[:n, 1]))
+                    dense = (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1]))
+                s, uotclass = loss(
+                    dense_weights,
+                    dense,
+                    uni_weights,
+                    mesh,
+                    None,
+                    None,
+                )
+                method_data["h_error"]["dense_original"] = s
+                print("Oringal Se loss:", s)
+
+                print("nope")
+                # This can always be tensorised
+                s, uotclass = loss(
+                    dense_weights,
+                    (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1])),                                                  #dense_weights,
+                    _torch_numpy_process(h / N),
+                    (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1])),                                  # _torch_numpy_process(X),
+                    uotclass.f,
+                    uotclass.g,
+                )
+                method_data["h_error"]["dense_W_error"] = s
+                print("h error", s)
             
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         suffix = "_lloyd" if self.lloyd else "_nolloyd"
