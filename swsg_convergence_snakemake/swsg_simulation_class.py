@@ -254,7 +254,8 @@ class SWSGSimulation:
         elif profile_type == "perturbedjet":
             temp = a * np.tanh(self.b * (x[:, 1] - c)) + d
             no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
-            temp = temp  + no
+
+            temp = temp  + no.squeeze()
             return temp
         else:
             raise KeyError("Unknown profile type")
@@ -288,8 +289,6 @@ class SWSGSimulation:
         ##############################################################
         X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d, full=True)
 
-        print('DENSEE SHAPES:',  h_density.shape, len(X))
-        print(X.shape)
         # compute symmetric OT problem (balanced) and  sav full class.
         dense_symmetric_dict = compute_dense_symmetric_potential(
             X, h_density, X, h_density, self.device
@@ -527,3 +526,10 @@ class SWSGSimulation:
         with open(error_path, "wb") as f:
             pickle.dump(dict0, f)
         print(f"Error data saved to {error_path}")
+
+
+if __name__=='__main__':
+    from swsg_simulation_class import SWSGSimulation
+
+    sim = SWSGSimulation(cuda=1, profile="perturbedjet", d=1)
+    sim.compute_density_symmetric_potential(output_dir="data_store")
