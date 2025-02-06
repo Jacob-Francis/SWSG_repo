@@ -575,7 +575,7 @@ class SWSGSimulation:
         with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:
             dict0 = pickle.load(f)
 
-        for which in [2, 3]:
+        for which in [2, 3, 4]:
             with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:
                 dict1 = pickle.load(f)
             dict0 = merge_dicts(dict0, dict1)
