@@ -282,11 +282,14 @@ class SWSGSimulation:
             torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
             torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
         ), h_density
+
     def compute_density_symmetric_potential(self, output_dir):
         ###############################################################
         ##############################################################
         X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d, full=True)
 
+        print('DENSEE SHAPES:',  h_density.shape, len(X))
+        print(X.shape)
         # compute symmetric OT problem (balanced) and  sav full class.
         dense_symmetric_dict = compute_dense_symmetric_potential(
             X, h_density, X, h_density, self.device
