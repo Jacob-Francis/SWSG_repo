@@ -285,7 +285,7 @@ class SWSGSimulation:
     def compute_density_symmetric_potential(self, output_dir):
         ###############################################################
         ##############################################################
-        X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d, full=False)
+        X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d, full=True)
 
         # compute symmetric OT problem (balanced) and  sav full class.
         dense_symmetric_dict = compute_dense_symmetric_potential(
