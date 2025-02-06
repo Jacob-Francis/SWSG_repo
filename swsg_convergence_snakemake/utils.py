@@ -598,6 +598,7 @@ def swsg_class_generate(
         target_points=X.detach().cpu(),
         source_density=sigma.detach().cpu(),
         target_density=h_leb.detach().cpu(),
+        cost_type='periodic', L=1.0
     )
 
     # assert (swsg_class.β_t == mu).all()
@@ -663,7 +664,7 @@ def swsg_run_halley_sinkhorn(swsg_class, lambert_tolerance=1e-12, tolerance=1e-1
         swsg_class.epsilon, swsg_class.rho, swsg_class.cost_const
     )
     swsg_class.debias_f.densities(
-        swsg_class.X_s, swsg_class.X_s, swsg_class.α_s, swsg_class.α_s
+        swsg_class.X_s, swsg_class.X_s, swsg_class.α_s, swsg_class.α_s, cost_type='periodic', L=1.0
     )
 
     f_update, g_update, i_sup = swsg_class.debias_f.sinkhorn_algorithm(
