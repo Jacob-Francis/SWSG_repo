@@ -53,7 +53,7 @@ class SWSGSimulation:
             no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
             temp = temp + torch.stack((no0, no1), dim=1)
         
-            raise temp
+            raise temp / (1+0.0001)
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
@@ -520,57 +520,33 @@ class SWSGSimulation:
                 dense_symmetric_potential=dense_4dsymmetric_dict,
                 tol=1e-12,
             )
-
-            for key, target in {
-                "bias": grad_phi,
-                "debias": debias_x_star,
-            }.items():
-                loss()
-
-
-                diff = periodic_g_x_vel(G, target, 1, L=1.0, periodic=False) - self.u_g(X)
-                X_dense, h_true_dense = self.compute_dense_samples(
-                    a=0.1, b=self.b, c=0.5, d=self.d, full=True
-                )
-                dense_weights = _torch_numpy_process(h_true_dense)
-                dense_weights /= dense_weights.sum()
-                print('DENSE weight device', dense_weights.device, self.device)
-
-                dense_points = _torch_numpy_process(X_dense)
-                N_dense = len(X_dense)
-                n_dense = int(np.sqrt(N_dense))
-                print("here")
-                if self.lloyd:
-                    mesh = _torch_numpy_process(Y)
-                    dense = dense_points
-                else:
-                    mesh = (_torch_numpy_process(Y[::n, 0]), _torch_numpy_process(Y[:n, 1]))
-                    dense = (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1]))
-                s, uotclass = loss(
-                    dense_weights,
-                    dense,
-                    uni_weights,
-                    mesh,
-                    None,
-                    None,
-                )
-                method_data[key]["u_g_error_j_true"] = dict(
-                    l1=l1.item(), l2=l2.item(), linf=linf
-                )
-                
-                print("nope")
-                # This can always be tensorised
-                s, uotclass = loss(
-                    dense_weights,
-                    (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1])),                                                  #dense_weights,
-                    _torch_numpy_process(h / N),
-                    (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1])),                                  # _torch_numpy_process(X),
-                    uotclass.f,
-                    uotclass.g,
-                )
-                method_data["h_error"]["dense_W_error"] = s
-                print("h error", s)
             
+            # Generate X_dense which is the correct 4D grid (I hope)
+            X_dense, h_density_dense = self.compute_4Ddense_samples()
+            X_current  = self.mesh4D(G, grad_phi)  # weights: uni_weights
+            s, uotclass = loss(
+                h_density_dense,
+                X_dense,
+                uni_weights,
+                X_current,
+                None,
+                None,
+            )
+            method_data["bias"]["4D_error"] = s
+            print('4D biased error: ', s)
+
+            X_current  = self.mesh4D(G, debias_x_star)  # weights: uni_weights
+            s, uotclass = loss(
+                h_density_dense,
+                X_dense,
+                uni_weights,
+                X_current,
+                uotclass.f,
+                uotclass.g,
+            )
+            method_data["debias"]["4D_error"] = s
+            print('4D debiased error: ', s)
+
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         suffix = "_lloyd" if self.lloyd else "_nolloyd"
         error_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors_{which}_which{suffix}.pkl"
