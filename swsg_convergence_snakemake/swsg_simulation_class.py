@@ -53,7 +53,7 @@ class SWSGSimulation:
             no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
             temp = temp + torch.stack((no0, no1), dim=1)
         
-            raise temp / (1+0.0001)
+            return temp / (1+0.0001)
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
