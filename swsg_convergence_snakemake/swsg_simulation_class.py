@@ -15,7 +15,7 @@ import numpy as np
 
 
 class SWSGSimulation:
-    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff="_lloyd"):
+    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff="_nolloyd"):
         if cuda is None:
             self.device = "cpu"
             self.dtype = torch.DoubleTensor
@@ -347,11 +347,6 @@ class SWSGSimulation:
 
         X, Y, G, h_true = self.lloyd_or_not(lloyd_file, epsilon)
 
-        # Load dense sym pot results
-        error_path = f"{output_dir}/dense_sym_profile_{self.profile}_dict.pkl"
-        with open(error_path, "rb") as f:
-            dense_symmetric_dict = pickle.load(f)
-
         ############### Wasserstien Error ###############
 
 
@@ -406,6 +401,12 @@ class SWSGSimulation:
         # ?: X true [l1, l2, linf] (Doesn't make sense for later time steps)
         # 2: h reconstruction, S_eps (__, dense) [with orginal too?]
         if which == 2:
+
+            # Load dense sym pot results
+            error_path = f"{output_dir}/dense_sym_profile_{self.profile}_dict.pkl"
+            with open(error_path, "rb") as f:
+                dense_symmetric_dict = pickle.load(f)
+
             # Generate the dense mesh with 250 000 points.
             loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
                 x,
@@ -499,8 +500,14 @@ class SWSGSimulation:
             )
             method_data["h_error"]["fine_W_error"] = s
             print("h error", s)
+
         # Phase space error metric
         if which == 4:
+
+            # Load dense sym pot results
+            error_path = f"{output_dir}/dense_4D_sym_profile_{self.profile}_dict.pkl"
+            with open(error_path, "rb") as f:
+                dense_4dsymmetric_dict = pickle.load(f)
 
             # Generate the dense mesh with 250 000 points.
             loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
@@ -510,7 +517,7 @@ class SWSGSimulation:
                 b,
                 f0=f0,
                 g0=g0,
-                dense_symmetric_potential=dense_symmetric_dict,
+                dense_symmetric_potential=dense_4dsymmetric_dict,
                 tol=1e-12,
             )
 
@@ -518,14 +525,10 @@ class SWSGSimulation:
                 "bias": grad_phi,
                 "debias": debias_x_star,
             }.items():
+                loss()
+
+
                 diff = periodic_g_x_vel(G, target, 1, L=1.0, periodic=False) - self.u_g(X)
-                l1 = torch.linalg.norm(diff, ord=1) / N
-                l2 = torch.linalg.norm(diff, ord=2) / N**0.5
-                linf = torch.linalg.norm(diff, ord=float("inf")).item()
-                method_data[key]["u_g_error_j_true"] = dict(
-                    l1=l1.item(), l2=l2.item(), linf=linf
-                )
-                
                 X_dense, h_true_dense = self.compute_dense_samples(
                     a=0.1, b=self.b, c=0.5, d=self.d, full=True
                 )
@@ -551,9 +554,10 @@ class SWSGSimulation:
                     None,
                     None,
                 )
-                method_data["h_error"]["dense_original"] = s
-                print("Oringal Se loss:", s)
-
+                method_data[key]["u_g_error_j_true"] = dict(
+                    l1=l1.item(), l2=l2.item(), linf=linf
+                )
+                
                 print("nope")
                 # This can always be tensorised
                 s, uotclass = loss(
