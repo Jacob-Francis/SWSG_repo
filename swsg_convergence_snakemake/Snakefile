@@ -83,7 +83,7 @@ rule run_4Ddense_sym:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d})
 sim.compute_4D_density_symmetric_potential(output_dir="data_store")
 '> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
         """
@@ -113,7 +113,8 @@ rule compute_w2_errors:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl",
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl",
-        dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl"
+        dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl",
+        dense_4dsym_dict="data_store/dense_4D_sym_profile_{profile}_dict.pkl"
     output:
         te = "data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl"
     params:
