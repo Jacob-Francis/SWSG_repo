@@ -7,7 +7,7 @@ from utils import (
     compute_dense_symmetric_potential,
     Sinkhorn_Divergence_balanced,
     normal_pdf,
-    periodic_g_x_vel
+    periodic_g_x_vel,
 )
 from time import perf_counter_ns
 from geomloss import SamplesLoss
@@ -15,7 +15,9 @@ import numpy as np
 
 
 class SWSGSimulation:
-    def __init__(self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff="_nolloyd"):
+    def __init__(
+        self, cuda=None, profile="uniform", d=1, b=10, tol=1e-11, suff="_nolloyd"
+    ):
         if cuda is None:
             self.device = "cpu"
             self.dtype = torch.DoubleTensor
@@ -34,26 +36,28 @@ class SWSGSimulation:
             self.lloyd = True
         elif suff == "_nolloyd":
             self.lloyd = False
-    
-    def u_g(self, x, a=0.1, c=0.5, g0=0.1):
-        if self.profile == 'uniform':
-            return -g0*torch.zeros_like(x)
-        elif self.profile=='shallowjet' or self.profile=='jet':
-            temp = torch.zeros_like(x)
-            temp[:, 0] = a*self.b*(1 - torch.tanh(self.b*(x[:, 1]-c))**2) 
-            return -g0*temp
-        elif self.profile=='incline':
-            temp = torch.ones_like(x)*self.b*a
-            temp[:, 1] = 0 
-            return -g0*temp
-        elif self.profile == 'perturbedjet':
-            temp = torch.zeros_like(x)
-            temp[:, 0] = a*self.b*(1 - torch.tanh(self.b*(x[:, 1]-c))**2) 
 
-            no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
+    def u_g(self, x, a=0.1, c=0.5, g0=0.1):
+        if self.profile == "uniform":
+            return -g0 * torch.zeros_like(x)
+        elif self.profile == "shallowjet" or self.profile == "jet":
+            temp = torch.zeros_like(x)
+            temp[:, 0] = a * self.b * (1 - torch.tanh(self.b * (x[:, 1] - c)) ** 2)
+            return -g0 * temp
+        elif self.profile == "incline":
+            temp = torch.ones_like(x) * self.b * a
+            temp[:, 1] = 0
+            return -g0 * temp
+        elif self.profile == "perturbedjet":
+            temp = torch.zeros_like(x)
+            temp[:, 0] = a * self.b * (1 - torch.tanh(self.b * (x[:, 1] - c)) ** 2)
+
+            no, no0, no1 = normal_pdf(
+                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.0001
+            )  ## 0 is stationnary
             temp = temp + torch.stack((no0, no1), dim=1)
-        
-            return temp / (1+0.0001)
+
+            return temp / (1 + 0.0001)
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
@@ -254,9 +258,11 @@ class SWSGSimulation:
             return torch.ones_like(x[:, 1]) / len(x[:, 1])
         elif profile_type == "perturbedjet":
             temp = a * np.tanh(self.b * (x[:, 1] - c)) + d
-            no, no0 , no1  = normal_pdf(x[:,0],x[:,1],0.5,0.3,0.1,strength=0.0001)  ## 0 is stationnary 
+            no, no0, no1 = normal_pdf(
+                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.0001
+            )  ## 0 is stationnary
 
-            temp = temp  + no.squeeze()
+            temp = temp + no.squeeze()
             return temp
         else:
             raise KeyError("Unknown profile type")
@@ -266,7 +272,7 @@ class SWSGSimulation:
         m1 = m2 = int(1 / 0.002)
 
         # Initialise the regular denisty - don't need to save as we can rerun anything
-  
+
         X = torch.cartesian_prod(
             torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
             torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
@@ -281,15 +287,17 @@ class SWSGSimulation:
             return X, h_density
         else:
             return (
-            torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
-            torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
-        ), h_density
-    
+                torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
+                torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
+            ), h_density
+
     def mesh4D(self, G, X):
         return torch.hstack((G, periodic_g_x_vel(G, X, 1, periodic=False)))
 
-    def compute_4Ddense_samples(self, ):
-        
+    def compute_4Ddense_samples(
+        self,
+    ):
+
         dense_epsilon = 0.002
 
         # Initialise the regular denisty - don't need to save as we can rerun anything
@@ -313,8 +321,7 @@ class SWSGSimulation:
         with open(error_path, "wb") as f:
             pickle.dump(dense_symmetric_dict, f)
         print(f"Dense data saved to {error_path}")
-    
-    
+
     def compute_4D_density_symmetric_potential(self, output_dir):
         ###############################################################
         ##############################################################
@@ -349,7 +356,6 @@ class SWSGSimulation:
 
         ############### Wasserstien Error ###############
 
-
         N = len(X[:, 0])
 
         _torch_numpy_process = lambda x: torch.tensor(
@@ -370,7 +376,7 @@ class SWSGSimulation:
         n = int(np.sqrt(N))
 
         # 1: u_g [l1, l2, linf]
-        print("WHICH",  which)
+        print("WHICH", which)
         if which == 1:
             for key, target in {
                 "bias": grad_phi,
@@ -390,8 +396,10 @@ class SWSGSimulation:
                 method_data[key]["u_g_error_true"] = dict(
                     l1=l1.item(), l2=l2.item(), linf=linf
                 )
-                
-                diff = periodic_g_x_vel(G, target, 1, L=1.0, periodic=False) - self.u_g(X)
+
+                diff = periodic_g_x_vel(G, target, 1, L=1.0, periodic=False) - self.u_g(
+                    X
+                )
                 l1 = torch.linalg.norm(diff, ord=1) / N
                 l2 = torch.linalg.norm(diff, ord=2) / N**0.5
                 linf = torch.linalg.norm(diff, ord=float("inf")).item()
@@ -423,7 +431,7 @@ class SWSGSimulation:
             )
             dense_weights = _torch_numpy_process(h_true_dense)
             dense_weights /= dense_weights.sum()
-            print('DENSE weight device', dense_weights.device, self.device)
+            print("DENSE weight device", dense_weights.device, self.device)
 
             dense_points = _torch_numpy_process(X_dense)
             N_dense = len(X_dense)
@@ -434,7 +442,10 @@ class SWSGSimulation:
                 dense = dense_points
             else:
                 mesh = (_torch_numpy_process(Y[::n, 0]), _torch_numpy_process(Y[:n, 1]))
-                dense = (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1]))
+                dense = (
+                    _torch_numpy_process(X_dense[::n_dense, 0]),
+                    _torch_numpy_process(X_dense[:n_dense, 1]),
+                )
             s, uotclass = loss(
                 dense_weights,
                 dense,
@@ -450,9 +461,15 @@ class SWSGSimulation:
             # This can always be tensorised
             s, uotclass = loss(
                 dense_weights,
-                (_torch_numpy_process(X_dense[::n_dense, 0]), _torch_numpy_process(X_dense[:n_dense, 1])),                                                  #dense_weights,
+                (
+                    _torch_numpy_process(X_dense[::n_dense, 0]),
+                    _torch_numpy_process(X_dense[:n_dense, 1]),
+                ),  # dense_weights,
                 _torch_numpy_process(h / N),
-                (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1])),                                  # _torch_numpy_process(X),
+                (
+                    _torch_numpy_process(X[::n, 0]),
+                    _torch_numpy_process(X[:n, 1]),
+                ),  # _torch_numpy_process(X),
                 uotclass.f,
                 uotclass.g,
             )
@@ -462,17 +479,17 @@ class SWSGSimulation:
         # 3: h reconstruction, S_eps (__, fine mesh) [with orginal too?]
         if which == 3:
             loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
-                    x,
-                    a,
-                    y,
-                    b,
-                    f0=f0,
-                    g0=g0,
-                    dense_symmetric_potential=None,
-                    tol=1e-12,
-                    epsilon=epsilon,
-                    fullcompute=True
-                )
+                x,
+                a,
+                y,
+                b,
+                f0=f0,
+                g0=g0,
+                dense_symmetric_potential=None,
+                tol=1e-12,
+                epsilon=epsilon,
+                fullcompute=True,
+            )
             if self.lloyd:
                 mesh = _torch_numpy_process(Y)
             else:
@@ -492,9 +509,12 @@ class SWSGSimulation:
             # This can always be tensorised
             s, uotclass = loss(
                 uni_weights,
-                mesh,                                                  #dense_weights,
+                mesh,  # dense_weights,
                 _torch_numpy_process(h / N),
-                (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1])),                                  # _torch_numpy_process(X),
+                (
+                    _torch_numpy_process(X[::n, 0]),
+                    _torch_numpy_process(X[:n, 1]),
+                ),  # _torch_numpy_process(X),
                 None,
                 None,
             )
@@ -520,32 +540,33 @@ class SWSGSimulation:
                 dense_symmetric_potential=dense_4dsymmetric_dict,
                 tol=1e-12,
             )
-            
+
             # Generate X_dense which is the correct 4D grid (I hope)
             X_dense, h_density_dense = self.compute_4Ddense_samples()
-            X_current  = self.mesh4D(G, grad_phi)  # weights: uni_weights
+            X_current = self.mesh4D(G, grad_phi)  # weights: uni_weights
+            print('here we are')
             s, uotclass = loss(
-                h_density_dense,
-                X_dense,
-                uni_weights,
-                X_current,
+                _torch_numpy_process(h_density_dense),
+                _torch_numpy_process(X_dense),
+                _torch_numpy_process(uni_weights),
+                _torch_numpy_process(X_current),
                 None,
                 None,
             )
             method_data["bias"]["4D_error"] = s
-            print('4D biased error: ', s)
+            print("4D biased error: ", s)
 
-            X_current  = self.mesh4D(G, debias_x_star)  # weights: uni_weights
+            X_current = self.mesh4D(G, debias_x_star)  # weights: uni_weights
             s, uotclass = loss(
-                h_density_dense,
-                X_dense,
-                uni_weights,
-                X_current,
+                _torch_numpy_process(h_density_dense),
+                _torch_numpy_process(X_dense),
+                _torch_numpy_process(uni_weights),
+                _torch_numpy_process(X_current),
                 uotclass.f,
                 uotclass.g,
             )
             method_data["debias"]["4D_error"] = s
-            print('4D debiased error: ', s)
+            print("4D debiased error: ", s)
 
         # Save error data to file # {method}_epsilon_{epsilon}_profile_{profile}_errors
         suffix = "_lloyd" if self.lloyd else "_nolloyd"
@@ -570,7 +591,9 @@ class SWSGSimulation:
             return dict1
 
         suffix = "_lloyd" if self.lloyd else "_nolloyd"
-        main_path = f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors"
+        main_path = (
+            f"{output_dir}/{method}_epsilon_{epsilon}_profile_{self.profile}_errors"
+        )
         which = 1
         with open(main_path + f"_{which}_which{suffix}.pkl", "rb") as f:
             dict0 = pickle.load(f)
@@ -586,8 +609,22 @@ class SWSGSimulation:
         print(f"Error data saved to {error_path}")
 
 
-if __name__=='__main__':
+if __name__ == "__main__":
     from swsg_simulation_class import SWSGSimulation
 
-    sim = SWSGSimulation(cuda=1, profile="perturbedjet", d=1)
-    sim.compute_density_symmetric_potential(output_dir="data_store")
+    sim = SWSGSimulation(cuda=0, profile="uniform", d=1)
+    sim.compute_W2_errors(
+        "four",
+        0.05,
+        "/home/jacob/SWSG_repo/swsg_convergence_snakemake/data_store/four_epsilon_0.05_profile_uniform_results_nolloyd.pkl",
+        None,
+        "/home/jacob/SWSG_repo/swsg_convergence_snakemake/data_store/four_epsilon_0.05_profile_uniform_lnormerrors.pkl",
+        output_dir="data_store",
+        which=int(4),
+    )
+#         python3 -c '
+# from swsg_simulation_class import SWSGSimulation
+
+# sim = SWSGSimulation(cuda=None, profcdile="{params.profile}", d={params.d}, suff="{params.suff}")
+# sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
+# ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
