@@ -12,6 +12,8 @@ from utils import (
 from time import perf_counter_ns
 from geomloss import SamplesLoss
 import numpy as np
+from swsg_ot_algorithm import SWSGSinkNewton, SWSGDynamcis
+
 
 
 class SWSGSimulation:
@@ -171,7 +173,13 @@ class SWSGSimulation:
         # Load in pre-calculated potentials:
         swsg_class.f = φ.to(swsg_class.X_s)
         swsg_class.g = ψ.to(swsg_class.X_s)
-
+        # Only geoverse debiased
+        swsg_class.debias_potential = SWSGSinkNewton(
+            pykeops=swsg_class.pykeops, debias=True, cuda_device=swsg_class.device
+        )
+        swsg_class.debias_potential.parameters(
+            swsg_class.epsilon, f=swsg_class.f_constant, g=swsg_class.g_constant
+        )
         swsg_class.debias_potential.densities(
             self.X_s, self.X_s, self.α_s, self.α_s, **self.cost_kwargs
         )  # need to load in as will be moving
