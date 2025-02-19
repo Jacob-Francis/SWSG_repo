@@ -181,7 +181,7 @@ class SWSGSimulation:
             swsg_class.epsilon, f=swsg_class.f_constant, g=swsg_class.g_constant
         )
         swsg_class.debias_potential.densities(
-            self.X_s, self.X_s, self.α_s, self.α_s, **self.cost_kwargs
+            swsg_class.X_s, swsg_class.X_s, swsg_class.α_s, swsg_class.α_s, **swsg_class.cost_kwargs
         )  # need to load in as will be moving
         swsg_class.debias_potential.sinkhorn_algorithm(
             reinitialise=True, sinkhorn_steps=500, tol=1e-15, aprox="balanced"
