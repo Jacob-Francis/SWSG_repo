@@ -18,7 +18,8 @@ rule all:
               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
                method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
-        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs)
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs),
+        expand("data_store/err_{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.txt", method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs)
 
 rule run_lloyd:
     output:
@@ -127,7 +128,7 @@ rule compute_w2_errors:
         python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
-sim = SWSGSimulation(cuda=int({params.wild}), profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """
@@ -149,4 +150,27 @@ from swsg_simulation_class import SWSGSimulation
 sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.combine_dicts("{wildcards.method}", {wildcards.epsilon}, output_dir="data_store")
 ' >> combine.out 2>> combine.err
+        """
+
+
+# swsg_correct_pbc_on_barycentres
+
+rule updated_pbc_of_results:
+   input:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+        suff="_{suffix}"
+    output:
+        errors_file="data_store/err_{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.txt"
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim.swsg_correct_pbc_on_barycentres("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
+' >> output.errors_file 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
         """

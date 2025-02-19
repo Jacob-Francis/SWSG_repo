@@ -138,6 +138,59 @@ class SWSGSimulation:
 
         return X, Y, G, h_true
 
+    def swsg_correct_pbc_on_barycentres(self, method, epsilon, result_file, lloyd_file, output_dir):
+
+
+        # load in previous results:
+        print(f"Correcting Barycentres: {method}, ε={epsilon}")
+
+        # Load saved simulation results
+        with open(result_file, "rb") as f:
+            result = pickle.load(f)
+
+        h = result["h"]
+        φ = result["φ"]
+        ψ = result["ψ"]
+
+        X, Y, G, h_true = self.lloyd_or_not(lloyd_file, epsilon)
+
+        X, Y, G, swsg_class, h_true = swsg_class_generate(
+            X,
+            Y,
+            G,
+            h_true,
+            self.device,
+            self.dtype,
+            epsilon=epsilon,
+            cuda=self.device.index,
+            tol=self.tol,
+            lloyd=self.lloyd,
+        )
+
+        # Load in pre-calculated potentials:
+        swsg_class.f = φ.to(swsg_class.X_s)
+        swsg_class.g = ψ.to(swsg_class.X_s)
+
+        swsg_class.debias_potential.densities(
+            self.X_s, self.X_s, self.α_s, self.α_s, **self.cost_kwargs
+            )  # need to load in as will be moving
+        swsg_class.debias_potential.sinkhorn_algorithm(
+            reinitialise=True, sinkhorn_steps=500, tol=1e-15, aprox="balanced"
+        )
+
+        # corrrecting to have the right periodic baryentres
+        grad_phi = -swsg_class.barycentre_map_of_points("target") + swsg_class.X_s
+        debias_x_star = grad_phi + swsg_class.debias_potential.barycentre_map_of_points("target")
+
+        # overwrite results
+        result['grad_phi'] = grad_phi.cpu()
+        result['debias_x_star'] = debias_x_star.cpu()
+
+        with open(result_file, "wb") as f:
+            pickle.dump(result, f)
+
+        print(f"Updated results to {output_path}")
+
     def run_simulation(self, method, epsilon, result_file, output_dir):
         """Run the simulation for a given method and ε, saving intermediate results."""
         print(f"Running simulation: {method}, ε={epsilon}, profile={self.profile}")
@@ -538,7 +591,7 @@ class SWSGSimulation:
                 f0=f0,
                 g0=g0,
                 dense_symmetric_potential=dense_4dsymmetric_dict,
-                tol=1e-12,
+                tol=1e-3,
             )
 
             # Generate X_dense which is the correct 4D grid (I hope)
