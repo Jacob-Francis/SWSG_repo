@@ -156,7 +156,7 @@ sim.combine_dicts("{wildcards.method}", {wildcards.epsilon}, output_dir="data_st
 # swsg_correct_pbc_on_barycentres
 
 rule updated_pbc_of_results:
-   input:
+    input:
         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl"
     params:
