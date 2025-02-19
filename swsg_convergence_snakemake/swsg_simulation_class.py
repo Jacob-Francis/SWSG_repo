@@ -151,7 +151,6 @@ class SWSGSimulation:
         with open(result_file, "rb") as f:
             result = pickle.load(f)
 
-        h = result["h"]
         φ = result["φ"]
         ψ = result["ψ"]
 
@@ -200,7 +199,7 @@ class SWSGSimulation:
         with open(result_file, "wb") as f:
             pickle.dump(result, f)
 
-        print(f"Updated results to {output_path}")
+        print(f"Updated results to {result_file}")
 
     def run_simulation(self, method, epsilon, result_file, output_dir):
         """Run the simulation for a given method and ε, saving intermediate results."""
