@@ -55,11 +55,11 @@ class SWSGSimulation:
             temp[:, 0] = a * self.b * (1 - torch.tanh(self.b * (x[:, 1] - c)) ** 2)
 
             no, no0, no1 = normal_pdf(
-                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.0001
+                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.001
             )  ## 0 is stationnary
             temp = temp + torch.stack((no0, no1), dim=1)
 
-            return temp / (1 + 0.0001)
+            return -g0* temp / (1 + 0.001)
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
@@ -601,7 +601,7 @@ class SWSGSimulation:
                 f0=f0,
                 g0=g0,
                 dense_symmetric_potential=dense_4dsymmetric_dict,
-                tol=1e-3,
+                tol=1e-8,
             )
 
             # Generate X_dense which is the correct 4D grid (I hope)
