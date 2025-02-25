@@ -8,6 +8,7 @@
 *.webm
 *.gif
 *.ipynb
+*.pdf
 
 # Ignore all image files
 *.jpeg
