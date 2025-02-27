@@ -19,7 +19,6 @@ rule all:
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
                method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
         expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs),
-        expand("data_store/err_{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.txt", method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs)
 
 rule run_lloyd:
     output:
