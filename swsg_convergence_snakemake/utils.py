@@ -727,30 +727,7 @@ def swsg_solver(swsg_class, method="three", lambert_tolerance=1e-12, tolerance=1
     toc = perf_counter_ns()
     print("SWSGLOOP:", method, toc - tic)
 
-    grad_phi = swsg_class.pykeops_formulas.barycentres(
-        ψ,
-        φ,
-        swsg_class.X_s,
-        swsg_class.Y_t,
-        swsg_class.epsilon,
-        swsg_class.α_s,
-        swsg_class.β_t,
-        swsg_class.Y_t,
-        swsg_class.f_constant**2,
-    )
-    grad_phi_debias = swsg_class.pykeops_formulas.barycentres(
-        φ_s,
-        φ_s,
-        swsg_class.X_s,
-        swsg_class.X_s,
-        swsg_class.epsilon,
-        swsg_class.α_s,
-        swsg_class.α_s,
-        swsg_class.X_s,
-        swsg_class.f_constant**2,
-    )
-
-    return φ, ψ, φ_s, ψ_s, grad_phi, grad_phi_debias, error_list
+    return φ, ψ, φ_s, ψ_s, error_list
 
 
 def compute_dense_symmetric_potential(X, α, Y, β, cuda="cuda:0", force_type="pykeops"):

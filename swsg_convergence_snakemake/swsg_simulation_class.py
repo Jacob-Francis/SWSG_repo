@@ -221,7 +221,7 @@ class SWSGSimulation:
         )
 
         tic = perf_counter_ns()
-        φ, ψ, φ_s, ψ_s, grad_phi, grad_phi_debias, error_list = swsg_solver(
+        φ, ψ, φ_s, ψ_s, error_list = swsg_solver(
             swsg_class, method=method, tolerance=self.tol, lambert_tolerance=self.tol
         )
         toc = perf_counter_ns()
@@ -229,8 +229,13 @@ class SWSGSimulation:
 
         # Calculate intermediate results
         h = (ψ_s - ψ) / 0.1
-        debias_x_star = grad_phi - (grad_phi_debias - G)
 
+        # corrrecting to have the right periodic baryentres
+        grad_phi = -swsg_class.barycentre_map_of_points("target") + swsg_class.X_s
+        debias_x_star = grad_phi + swsg_class.debias_f.barycentre_map_of_points(
+            "target"
+        )
+    
         # Save intermediate results to file
         result = {
             "h": h.cpu(),
