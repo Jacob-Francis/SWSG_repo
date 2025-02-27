@@ -1,0 +1,176 @@
+# Define the input data or parameters
+profiles = ["jet", "shallowjet"]
+methods = ["one", "four"]
+epsilons = [0.05, 0.025, 0.0125, 0.00625]
+whichs = [1, 2, 3, 4]
+suffixs = ['nolloyd'] #'lloyd',
+
+# To Do add which 4 
+
+
+rule all:
+    input:
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl", 
+               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        expand("data_store/dense_sym_profile_{profile}_dict.pkl", profile=profiles),
+        expand("data_store/dense_4D_sym_profile_{profile}_dict.pkl", profile=profiles),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl", 
+              method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl", 
+               method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs),
+        expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl", method=methods, epsilon=epsilons, profile=profiles, which=whichs, suffix=suffixs),
+        expand("data_store/err_{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.txt", method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs)
+
+rule run_lloyd:
+    output:
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
+sim.generate_case({wildcards.epsilon}, output_dir="data_store")
+'> {wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.epsilon}{wildcards.profile}.err
+        """
+
+rule run_simulation:
+    input:
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl"
+    output:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+        suff="_{suffix}"
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
+'> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
+        """
+
+# Indepeden tof suffix, but needs to be re-ran for shallowjet
+rule run_dense_sym:
+    output:
+        dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=1, profile="{params.profile}", d={params.d})
+sim.compute_density_symmetric_potential(output_dir="data_store")
+'> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
+        """
+
+rule run_4Ddense_sym:
+    output:
+        dense_4dsym_dict="data_store/dense_4D_sym_profile_{profile}_dict.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d})
+sim.compute_4D_density_symmetric_potential(output_dir="data_store")
+'> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
+        """
+
+rule compute_l_errors:
+    input:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+        suff="_{suffix}"
+    output:
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl"
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
+        """
+
+rule compute_w2_errors:
+    input:
+        results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
+        lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl",
+        errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl",
+        dense_sym_dict="data_store/dense_sym_profile_{profile}_dict.pkl",
+        dense_4dsym_dict="data_store/dense_4D_sym_profile_{profile}_dict.pkl"
+    output:
+        te = "data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl"
+    params:
+        profile="{profile}",
+        wild = "{which}",
+        d=1,
+        suff="_{suffix}"
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
+        """
+
+rule combine_w2_errors:
+    input:
+        te = expand("data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{which}_which_{suffix}.pkl",  method=methods, epsilon=epsilons, profile=profiles, suffix=suffixs, which=whichs)
+    output:
+        allerrors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_errors_{suffix}.pkl"
+    params:
+        profile="{profile}",
+        d=1,
+        suff="_{suffix}"
+    shell:
+        """
+        python3 -c '
+from swsg_simulation_class import SWSGSimulation
+
+sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim.combine_dicts("{wildcards.method}", {wildcards.epsilon}, output_dir="data_store")
+' >> combine.out 2>> combine.err
+        """
+
+
+# swsg_correct_pbc_on_barycentres
+
+# rule updated_pbc_of_results:
+#     input:
+#         results_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_results_{suffix}.pkl",
+#         lloyd_file="data_store/epsilon_{epsilon}_profile_{profile}_lloyd.pkl"
+#     params:
+#         profile="{profile}",
+#         d=1,
+#         suff="_{suffix}"
+#     output:
+#         errors_file="data_store/err_{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.txt"
+#     shell:
+#         """
+#         python3 -c '
+# from swsg_simulation_class import SWSGSimulation
+
+# sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
+# sim.swsg_correct_pbc_on_barycentres("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
+# ' >> {output.errors_file} 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
+#         """
