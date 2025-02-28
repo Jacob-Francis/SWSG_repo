@@ -503,28 +503,28 @@ class SWSGSimulation:
             N_dense = len(X_dense)
             n_dense = int(np.sqrt(N_dense))
 
-            if self.lloyd:
-                mesh = _torch_numpy_process(Y)
-                dense = dense_points
-            else:
-                N = len(X)
-                n = int(np.sqrt(N))
-                mesh = (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1]))
-                dense = (
-                    _torch_numpy_process(X_dense[::n_dense, 0]),
-                    _torch_numpy_process(X_dense[:n_dense, 1]),
-                )
-            s, uotclass = loss(
-                dense_weights,
-                dense,
-                uni_weights,
-                mesh,
-                None,
-                None,
-            )
+            # if self.lloyd:
+            #     mesh = _torch_numpy_process(Y)
+            #     dense = dense_points
+            # else:
+            #     N = len(X)
+            #     n = int(np.sqrt(N))
+            #     mesh = (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1]))
+            #     dense = (
+            #         _torch_numpy_process(X_dense[::n_dense, 0]),
+            #         _torch_numpy_process(X_dense[:n_dense, 1]),
+            #     )
+            # s, uotclass = loss(
+            #     dense_weights,
+            #     dense,
+            #     uni_weights,
+            #     mesh,
+            #     None,
+            #     None,
+            # )
 
-            method_data["h_error"]["dense_original"] = s
-            print("Oringal Se loss:", s)
+            # method_data["h_error"]["dense_original"] = s
+            # print("Oringal Se loss:", s)
             N = len(X)
             n = int(np.sqrt(N))
             print("nope")
@@ -540,8 +540,8 @@ class SWSGSimulation:
                     _torch_numpy_process(X[::n, 0]),
                     _torch_numpy_process(X[:n, 1]),
                 ),  # _torch_numpy_process(X),
-                uotclass.f,
-                uotclass.g,
+                None,
+                None,
             )
             method_data["h_error"]["dense_W_error"] = s
             print("h error", s)
@@ -591,8 +591,8 @@ class SWSGSimulation:
                 _torch_numpy_process(X_dense),
                 _torch_numpy_process(uni_weights),
                 _torch_numpy_process(X_current),
-                uotclass.f,
-                uotclass.g,
+                None,
+                None,
             )
             method_data["debias"]["4D_error"] = s
             print("4D debiased error: ", s)
