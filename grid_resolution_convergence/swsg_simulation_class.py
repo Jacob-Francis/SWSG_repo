@@ -269,7 +269,9 @@ class SWSGSimulation:
 
         X, Y, G, _ = self.lloyd_or_not(lloyd_file, epsilon)
         
-        h_true = self.height_func(X[:, 1])
+        h_true = self.height_func(
+            X, profile_type=self.profile
+        ).view(-1, 1)
         h_true /= h_true.sum()
     
         N = len(X[:, 0])
@@ -350,7 +352,7 @@ class SWSGSimulation:
         )
 
         h_density = self.height_func(
-            X, a=a, b=self.b, c=c, d=d, profile_type=self.profile
+            X, a=a, c=c, d=d, profile_type=self.profile
         ).view(-1, 1)
         h_density /= h_density.sum()
 
