@@ -503,28 +503,6 @@ class SWSGSimulation:
             N_dense = len(X_dense)
             n_dense = int(np.sqrt(N_dense))
 
-            # if self.lloyd:
-            #     mesh = _torch_numpy_process(Y)
-            #     dense = dense_points
-            # else:
-            #     N = len(X)
-            #     n = int(np.sqrt(N))
-            #     mesh = (_torch_numpy_process(X[::n, 0]), _torch_numpy_process(X[:n, 1]))
-            #     dense = (
-            #         _torch_numpy_process(X_dense[::n_dense, 0]),
-            #         _torch_numpy_process(X_dense[:n_dense, 1]),
-            #     )
-            # s, uotclass = loss(
-            #     dense_weights,
-            #     dense,
-            #     uni_weights,
-            #     mesh,
-            #     None,
-            #     None,
-            # )
-
-            # method_data["h_error"]["dense_original"] = s
-            # print("Oringal Se loss:", s)
             N = len(X)
             n = int(np.sqrt(N))
             print("nope")
@@ -535,10 +513,10 @@ class SWSGSimulation:
                     _torch_numpy_process(X_dense[::n_dense, 0]),
                     _torch_numpy_process(X_dense[:n_dense, 1]),
                 ),  # dense_weights,
-                _torch_numpy_process(h / N),
+                _torch_numpy_process(h / h.sum()),
                 (
-                    _torch_numpy_process(X[::n, 0]),
-                    _torch_numpy_process(X[:n, 1]),
+                    _torch_numpy_process(X[::int(np.sqrt(len(X))), 0]),
+                    _torch_numpy_process(X[:int(np.sqrt(len(X))), 1]),
                 ),  # _torch_numpy_process(X),
                 None,
                 None,

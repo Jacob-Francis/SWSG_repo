@@ -740,14 +740,14 @@ def compute_dense_symmetric_potential(X, α, Y, β, cuda="cuda:0", force_type="p
     Compute the dense symmetric potential when no precomputed potential is provided.
     """
     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
-    uotclass.parameters(epsilon=0.002)
+    uotclass.parameters(epsilon=0.01)
 
     # We can tensorise:
     uotclass.densities(X, Y, α, β)
 
     tic = perf_counter_ns()
     f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-        tol=1e-12,
+        tol=1e-9,
         verbose=False,
         aprox="balanced",
         convergence_repeats=3,
