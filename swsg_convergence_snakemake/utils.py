@@ -735,7 +735,7 @@ def compute_dense_symmetric_potential(X, α, Y, β, cuda="cuda:0", force_type="p
     Compute the dense symmetric potential when no precomputed potential is provided.
     """
     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
-    uotclass.parameters(epsilon=0.002)
+    uotclass.parameters(epsilon=0.01)
 
     # We can tensorise:
     uotclass.densities(X, Y, α, β)
@@ -765,7 +765,7 @@ def compute_sinkhorn_divergence(
     Compute the symmetric update using a precomputed potential.
     """
     uotclass = DebiasedUOT(pykeops=True, cuda_device=cuda)
-    uotclass.parameters(epsilon=0.002)
+    uotclass.parameters(epsilon=0.01)
     uotclass.densities(X, Y, α, β)
 
     # Run Sinkhorn
@@ -825,7 +825,7 @@ def Sinkhorn_Divergence_balanced(
     g0=None,
     force_type="pykeops",
     tol=1e-12,
-    epsilon=0.002,
+    epsilon=0.01,
     fullcompute=False
 ):
     """

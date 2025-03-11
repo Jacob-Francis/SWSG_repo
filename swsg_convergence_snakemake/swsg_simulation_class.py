@@ -555,7 +555,6 @@ class SWSGSimulation:
                 g0=g0,
                 dense_symmetric_potential=None,
                 tol=1e-12,
-                epsilon=epsilon,
                 fullcompute=True,
             )
             if self.lloyd:
