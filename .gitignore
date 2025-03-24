@@ -9,6 +9,7 @@
 *.gif
 *.ipynb
 *.pdf
+*.txt
 
 # Ignore all image files
 *.jpeg
