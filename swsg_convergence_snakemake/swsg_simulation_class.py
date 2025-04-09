@@ -336,8 +336,8 @@ class SWSGSimulation:
             raise KeyError("Unknown profile type")
 
     def compute_dense_samples(self, a=0.1, b=10, c=0.5, d=1.0, full=True):
-        dense_epsilon = 0.002
-        m1 = m2 = int(1 / 0.002)
+        dense_epsilon = 0.0015625
+        m1 = m2 = int(1 / dense_epsilon)
 
         # Initialise the regular denisty - don't need to save as we can rerun anything
 
@@ -366,7 +366,7 @@ class SWSGSimulation:
         self,
     ):
 
-        dense_epsilon = 0.002
+        dense_epsilon = 0.0015625
 
         # Initialise the regular denisty - don't need to save as we can rerun anything
         X, Y, G, h_density = self.lloyd_or_not(None, dense_epsilon)
@@ -491,8 +491,10 @@ class SWSGSimulation:
                 b,
                 f0=f0,
                 g0=g0,
-                dense_symmetric_potential=dense_symmetric_dict,
+#                 dense_symmetric_potential=dense_symmetric_dict,
                 tol=1e-12,
+                fullcompute=True
+
             )
             X_dense, h_true_dense = self.compute_dense_samples(
                 a=0.1, b=self.b, c=0.5, d=self.d, full=True
@@ -514,16 +516,8 @@ class SWSGSimulation:
                     _torch_numpy_process(X_dense[::n_dense, 0]),
                     _torch_numpy_process(X_dense[:n_dense, 1]),
                 )
-            s, uotclass = loss(
-                dense_weights,
-                dense,
-                uni_weights,
-                mesh,
-                None,
-                None,
-            )
-            method_data["h_error"]["dense_original"] = s
-            print("Oringal Se loss:", s)
+
+            method_data["h_error"]["dense_original"] = float('inf')
 
             print("nope")
             # This can always be tensorised
@@ -533,13 +527,13 @@ class SWSGSimulation:
                     _torch_numpy_process(X_dense[::n_dense, 0]),
                     _torch_numpy_process(X_dense[:n_dense, 1]),
                 ),  # dense_weights,
-                _torch_numpy_process(h / N),
+                _torch_numpy_process(h / h.sum()),
                 (
                     _torch_numpy_process(X[::n, 0]),
                     _torch_numpy_process(X[:n, 1]),
                 ),  # _torch_numpy_process(X),
-                uotclass.f,
-                uotclass.g,
+                None,
+                None,
             )
             method_data["h_error"]["dense_W_error"] = s
             print("h error", s)
@@ -605,7 +599,7 @@ class SWSGSimulation:
                 f0=f0,
                 g0=g0,
                 dense_symmetric_potential=dense_4dsymmetric_dict,
-                tol=1e-8,
+                tol=1e-9,
             )
 
             # Generate X_dense which is the correct 4D grid (I hope)

@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from scipy.spatial.distance import cdist as scipy_cdist
-from plotting_utils import colour_bar
 from functools import partial
 import pickle
 from time import perf_counter_ns
@@ -826,7 +825,8 @@ def Sinkhorn_Divergence_balanced(
     force_type="pykeops",
     tol=1e-12,
     epsilon=0.01,
-    fullcompute=False
+    fullcompute=False,
+    allow_annealing=True
 ):
     """
     # Run OT(a, b) on grid X, Y reusing the dense symmeric potential and cost
@@ -856,7 +856,7 @@ def Sinkhorn_Divergence_balanced(
     elif fullcompute:
         try:
             f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=True
+                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_repeats=3, convergence_or_fail=allow_annealing
             )
         except RuntimeWarning:
             f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
@@ -870,9 +870,10 @@ def Sinkhorn_Divergence_balanced(
         # Run sinkhorn
         try:
             f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=True
+                f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=allow_annealing
             )
         except RuntimeWarning:
+            print('EPSILON ANNEALING')
             f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
                 f0=f0, g0=g0, aprox="balanced", tol=tol, convergence_or_fail=False, epsilon_annealing=True,
             )
