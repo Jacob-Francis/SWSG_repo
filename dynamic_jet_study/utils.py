@@ -386,7 +386,7 @@ def compute_norms_and_plot(
             trend_line,
             "--",
             color="black",
-            label="Slope 1 Trend Line",
+            label="Slope 1 Trend",
             alpha=0.6,
         )
 
@@ -468,7 +468,7 @@ def plot_nest_heights(
     C = sqrt_s[ref_index] / epsilons[ref_index] ** slope  # Compute scaling factor
     trend_line = C * np.array(epsilons) ** slope
     plt.loglog(
-        epsilons, trend_line, "--", color="black", label=f"Trend line (slope={slope})"
+        epsilons, trend_line, "--", color="black", label=f"Trend (slope={slope})"
     )
 
     plt.xticks(epsilons, [f"{eps:.6f}" for eps in epsilons])
@@ -501,7 +501,6 @@ def merged_plots(
     s = {}
 
     # Load data for different time steps (T5, T10)
-    Times = ["T5", "T10"]
     for T in Times:
         with open(f"pickle_folder/{file_prefix}_{T}.pkl", "rb") as f:
             s[T] = pickle.load(f)
@@ -509,7 +508,7 @@ def merged_plots(
     plt.figure(figsize=(7, 5), dpi=200)
 
     # Define different markers for T5 and T10
-    time_markers = {"T5": "o", "T10": "s"}  # Circle  # Square
+    time_markers = {"T0":'x', "T5": "o", "T10": "s"}  # Circle  # Square
 
     # Define colors and line styles for L1, L2, and Linf
     norm_styles = {
@@ -538,7 +537,7 @@ def merged_plots(
         )
 
     # Add NN-based lines for l1, l2, linf
-    times_lab = ["T5", "T10"]
+    times_lab = [k for k in time_markers.keys()]
     for i, key in enumerate(["99", "199"]):
         with open(f"pickle_folder/nn_height_heun_0.05_{key}.pkl", "rb") as f:
             lp_norm = pickle.load(f)
@@ -561,7 +560,7 @@ def merged_plots(
     C = sqrt_s[ref_index] / epsilons[ref_index] ** slope
     trend_line = C * np.array(epsilons) ** slope
     plt.loglog(
-        epsilons, trend_line, "--", color="black", label=f"Trend (slope={slope})"
+        epsilons, trend_line, "--", color="black", label=f"Trend (slope={slope})", alpha=0.5
     )
 
     plt.xticks(epsilons, [f"{eps:.6f}" for eps in epsilons])
@@ -577,26 +576,16 @@ def merged_plots(
 
     legend_elements = [
         # Markers for time steps
-        Line2D(
+        *[Line2D(
             [0],
             [0],
-            marker="o",
+            marker=time_markers[key],
             color="w",
             markerfacecolor="none",
             markeredgecolor="black",
             markersize=8,
-            label="time=5",
-        ),
-        Line2D(
-            [0],
-            [0],
-            marker="s",
-            color="w",
-            markerfacecolor="none",
-            markeredgecolor="black",
-            markersize=8,
-            label="time=10",
-        ),
+            label=f"time={key.split('T')[1]}",
+        ) for key in time_markers.keys()],
         # Line styles for norms
         Line2D([0], [0], color="#E69F00", linestyle="-", label="L1"),
         Line2D([0], [0], color="#56B4E9", linestyle="--", label="L2 "),
@@ -610,7 +599,7 @@ def merged_plots(
         ),
         # Trend line
         Line2D(
-            [0], [0], color="black", linestyle="--", label=f"Trend line (slope={slope})"
+            [0], [0], color="black", linestyle="--", label=f"Trend (slope={slope})"
         ),
     ]
 
@@ -627,7 +616,7 @@ def compute_sigma_distance(time, epsilons, device, strength=0.0001, method='heun
 
     # Fine epsilon setup
     fine_index = len(epsilons) - 1
-    epsilon_fine = epsilons[fine_index]
+    epsilon_fine = epsilons[-1]
     with open(f'data_store/output_{method}_{dt}_{epsilon_fine}_strength_{strength}.pkl', 'rb') as f:
         data_fine = pickle.load(f)
 
