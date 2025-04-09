@@ -540,46 +540,46 @@ class SWSGSimulation:
 
         # 3: h reconstruction, S_eps (__, fine mesh) [with orginal too?]
         if which == 3:
-            loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
-                x,
-                a,
-                y,
-                b,
-                f0=f0,
-                g0=g0,
-                dense_symmetric_potential=None,
-                tol=1e-12,
-                fullcompute=True,
-            )
-            if self.lloyd:
-                mesh = _torch_numpy_process(Y)
-            else:
-                mesh = (_torch_numpy_process(Y[::n, 0]), _torch_numpy_process(Y[:n, 1]))
-            s, uotclass = loss(
-                uni_weights,
-                mesh,
-                uni_weights,
-                mesh,
-                None,
-                None,
-            )
-            method_data["h_error"]["fine_original"] = s
+            # loss = lambda a, x, b, y, f0, g0: Sinkhorn_Divergence_balanced(
+            #     x,
+            #     a,
+            #     y,
+            #     b,
+            #     f0=f0,
+            #     g0=g0,
+            #     dense_symmetric_potential=None,
+            #     tol=1e-12,
+            #     fullcompute=True,
+            # )
+            # if self.lloyd:
+            #     mesh = _torch_numpy_process(Y)
+            # else:
+            #     mesh = (_torch_numpy_process(Y[::n, 0]), _torch_numpy_process(Y[:n, 1]))
+            # s, uotclass = loss(
+            #     uni_weights,
+            #     mesh,
+            #     uni_weights,
+            #     mesh,
+            #     None,
+            #     None,
+            # )
+            method_data["h_error"]["fine_original"] = float('inf')
             print("Oringal Se loss:", s)
 
             print("nope")
             # This can always be tensorised
-            s, uotclass = loss(
-                uni_weights,
-                mesh,  # dense_weights,
-                _torch_numpy_process(h / N),
-                (
-                    _torch_numpy_process(X[::n, 0]),
-                    _torch_numpy_process(X[:n, 1]),
-                ),  # _torch_numpy_process(X),
-                None,
-                None,
-            )
-            method_data["h_error"]["fine_W_error"] = s
+            # s, uotclass = loss(
+            #     uni_weights,
+            #     mesh,  # dense_weights,
+            #     _torch_numpy_process(h / N),
+            #     (
+            #         _torch_numpy_process(X[::n, 0]),
+            #         _torch_numpy_process(X[:n, 1]),
+            #     ),  # _torch_numpy_process(X),
+            #     None,
+            #     None,
+            # )
+            method_data["h_error"]["fine_W_error"] = float('inf')
             print("h error", s)
 
         # Phase space error metric
