@@ -80,7 +80,7 @@ def jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c
     return X, Y, G, h_true, mu
     
 
-def compute_norms_and_plot(method='heun', strength=0.0001, dt=0.05, time_steps=[199], verbose=False):
+def compute_norms_and_plot(method='heun', strength=0.0001, dt=0.05, time_steps=[199], verbose=False, prefix='output', save_file='nest_height_interp_multiple_T.pdf'):
     """
     Computes L1, L2, and Linf norms for different grid resolutions and 
     plots error trends for multiple time steps using NN-interpolation onto a finer grid.
@@ -101,7 +101,8 @@ def compute_norms_and_plot(method='heun', strength=0.0001, dt=0.05, time_steps=[
         print(f"Fine Grid -> ε: {epsilon_fine}, N: {N_fine}, n: {n_fine}, n²: {n_fine**2}")
 
     # Load fine grid data
-    fine_file = f'data_store/output_{method}_{dt}_{epsilon_fine}_strength_{strength}.pkl'
+
+    fine_file = f'data_store/{prefix}_{method}_{dt}_{epsilon_fine}_strength_{strength}.pkl'
     with open(fine_file, 'rb') as f:
         data_fine = pickle.load(f)
 
@@ -131,7 +132,7 @@ def compute_norms_and_plot(method='heun', strength=0.0001, dt=0.05, time_steps=[
                 print(f"Coarse Grid -> ε: {epsilon}, N: {N}, n: {n}, n²: {n**2}")
 
             # Load coarse grid data
-            coarse_file = f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl'
+            coarse_file = f'data_store/{prefix}_{method}_{dt}_{epsilon}_strength_{strength}.pkl'
             with open(coarse_file, 'rb') as f:
                 data_course = pickle.load(f)
 
@@ -168,7 +169,7 @@ def compute_norms_and_plot(method='heun', strength=0.0001, dt=0.05, time_steps=[
                 print(f"Interpolated Sum: {interpolated.sum()}, Coarse Weight Sum: {sigma_weights.sum()}, Fine Weight Sum: {sigma_weights_dense.sum()}")
                 
                 
-        with open(f'pickle_folder/nn_height_{method}_{dt}_{time_step}.pkl', 'wb') as f:
+        with open(f'pickle_folder/{prefix}_nn_height_{method}_{dt}_{time_step}.pkl', 'wb') as f:
             pickle.dump({'l1':l1_norms, 'l2':l2_norms, 'linf':linf_norms} , f)
 
         # Plot error norms for this time step
@@ -201,7 +202,7 @@ def compute_norms_and_plot(method='heun', strength=0.0001, dt=0.05, time_steps=[
     plt.tight_layout()
 
     # Save and show
-    plt.savefig('nest_height_interp_multiple_T.pdf')
+    plt.savefig(save_file)
     plt.show()
 
 
