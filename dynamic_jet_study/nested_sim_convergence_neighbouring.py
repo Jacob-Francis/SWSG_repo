@@ -23,7 +23,7 @@ from utils import normal_pdf, jet_profile_initialisation, Sinkhorn_Divergence_ba
 ####################################################################################
 #               Main script
 ####################################################################################
-cuda = 3
+cuda = 5
 strength = 0.0001
 
 global device
@@ -38,37 +38,28 @@ device = f'cuda:{cuda}'
 ####################################################################################
 
 
-for time, T in [(0, 'T0'), (1414-1, 'T5')]:
-    prefix = 'finer001_'
+for time, T in [(0,'T0'),(99,'T5'),(199,'T10')]:
+    pre_fix = 'nest_001'
     method = 'heun'
 
 
-####################################################################################
-#            Main loop
-####################################################################################
+    ####################################################################################
+    #            Main loop
+    ####################################################################################
 
     s = []
-    epsilons=[]
 
-# for epsilon in [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625]: #, 141**2, 200**2
-#     N=(1/epsilon)**2
-#     n = int(np.sqrt(N))
-#     dt = 0.05
-#     epsilons.append(epsilon)
-#     print(epsilon, N, n, n**2)
+    epsilons = [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.015625/2, 0.015625/4]
 
-# epsilons = [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.015625/2]
-
-    for i in range(6):
-        epsilon = (1/25) * np.sqrt(2)**(-i)
-        epsilons.append(epsilon)
+    for i in range(7):
+        epsilon = epsilons[i]
         N = 1/ epsilon**2
         n = int(np.sqrt(N))
-        dt = (1/25) * np.sqrt(2)**(-7)
+        dt = 0.05
         print(epsilon, N, n, n**2)
 
-        # Load in course data
-        with open(f'data_store/simstudy_shorter_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
+            # Load in course data
+        with open(f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
             data_course = pickle.load(f)
 
         _, _, _, sigma_weights, _ = jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
@@ -77,13 +68,13 @@ for time, T in [(0, 'T0'), (1414-1, 'T5')]:
 
         ### load in denser neigbout;
         i += 1
-        epsilon = (1/25) * np.sqrt(2)**(-i)
+        epsilon = epsilons[i]
         N = 1/ epsilon**2
         n = int(np.sqrt(N))
-        dt = (1/25) * np.sqrt(2)**(-7)
+        dt = 0.05
         print(epsilon, N, n, n**2)
 
-        with open(f'data_store/simstudy_shorter_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
+        with open(f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
             data_fine = pickle.load(f)
 
         X_dense, _, _, sigma_weights_dense, _ = jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
@@ -106,8 +97,9 @@ for time, T in [(0, 'T0'), (1414-1, 'T5')]:
         print('TIMING: ', tic-toc, output)
         s.append(output)
 
-        with open(prefix+f'sigma_neigh_{T}.pkl', 'wb') as f:
+        with open(pre_fix+f'_sigma_neigh_{T}.pkl', 'wb') as f:
             pickle.dump(s, f)
+
 
 
     ####################################################################################
@@ -116,37 +108,37 @@ for time, T in [(0, 'T0'), (1414-1, 'T5')]:
     # Load in fine data
 
     s1 = []
-    epsilons = []
+    epsilons = [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.015625/2, 0.015625/4]
 
-    for i in range(6):
-        epsilon = (1/25) * np.sqrt(2)**(-i)
-        epsilons.append(epsilon)
+    for i in range(7):
+        epsilon = epsilons[i]
         N = 1/ epsilon**2
         n = int(np.sqrt(N))
-        dt = (1/25) * np.sqrt(2)**(-7)
+        dt = 0.05
         print(epsilon, N, n, n**2)
-        
+
         # Load in course data
-        with open(f'data_store/simstudy_shorter_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
+        with open(f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
             data_course = pickle.load(f)
 
         X, _, _, sigma_weights, _ = jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
 
         sigma_weights /= sigma_weights.sum()
-        
+
         i += 1
-        epsilon = (1/25) * np.sqrt(2)**(-i)
+        epsilon = epsilons[i]
         N = 1/ epsilon**2
         n = int(np.sqrt(N))
-        dt = (1/25) * np.sqrt(2)**(-7)
+        dt = 0.05
         print(epsilon, N, n, n**2)
+        method = 'heun'
 
-        with open(f'data_store/simstudy_shorter_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
+        with open(f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
             data_fine = pickle.load(f)
 
         X_dense, _, _, sigma_weights_dense, _ = jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
         sigma_weights_dense /= sigma_weights_dense.sum()
-        
+
         tic = perf_counter_ns()
         output, uotclass = Sinkhorn_Divergence_balanced(
                 X_dense.to(device),
@@ -161,9 +153,8 @@ for time, T in [(0, 'T0'), (1414-1, 'T5')]:
 
             )  
         toc = perf_counter_ns()
-        
+
         s1.append(output)
-        with open(prefix+f'heights_nighbouting_{T}.pkl', 'wb') as f:
+        with open(pre_fix+f'_heights_nighbouting_{T}.pkl', 'wb') as f:
             pickle.dump(s1, f)
     #  Look at solutions
-

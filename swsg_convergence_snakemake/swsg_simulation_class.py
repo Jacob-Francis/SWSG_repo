@@ -330,7 +330,7 @@ class SWSGSimulation:
                 x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.0001
             )  ## 0 is stationnary
 
-            temp = temp + no.squeeze()
+            temp = temp + no.squeeze()/g
             return temp
         else:
             raise KeyError("Unknown profile type")
