@@ -23,7 +23,6 @@ parser = argparse.ArgumentParser(description="Parse config file")
 parser.add_argument("cuda", type=int, help="cuda index")
 parser.add_argument("epsilon", type=float, help="size of epsilon")
 parser.add_argument("strength", type=float, help="strength of perturbation")
-parser.add_argument("method", type=int, help="1,2,3  methods?")
 
 # parser.add_argument("method", type=str, help="method; one of 'euler' 'heun' 'rk4'")
 
@@ -31,9 +30,13 @@ args = parser.parse_args()
 cuda = args.cuda
 epsilon = args.epsilon
 strength = args.strength
-meth = args.method
-g = 0.025
+
+# g = 0.025
+# a = 0.5
+
+g = 0.1
 a = 0.1
+
 b = 10
 
 assert(3* np.sqrt(3) / (4*g) > a*b**2)
@@ -111,17 +114,13 @@ device = f'cuda:{cuda}'
 
 X_xy, Y, G_xy, h_true, mu = jet_profile_initialisation(epsilon, strength, f=1.0, g=g, a=a, b=b, c=0.5, d=1.0)
 
-if meth == 2:
-    methods = ['euler', 'heun']
-elif meth ==  1:
-    methods = ['heun']
-else:
-    methods = ['euler', 'heun','rk4']
+
+methods = ['heun']
 
 
 
 for method in methods:
-    for dt in [0.05]:   # 0.4, 0.2, 0.1, 
+    for dt in [0.05]:   # 0.4, 0.2, 0.1, 0.05
         print(f'Starting: output_{method}_{dt}_{epsilon}')
         swsg_class = SWSGDynamcis(pykeops=True, cuda_device=device)
         swsg_class.parameters(ε=epsilon, f=1.0, g=g)
@@ -141,14 +140,16 @@ for method in methods:
 
         swsg_class.densities(source_points=G_xy.detach().clone(), target_points=X_xy.detach().clone(), source_density=sigma.detach(), target_density=h_leb.detach(), cost_type='periodic', L=1.0)
 
-        time_steps = int(100/dt)
+        time_steps = int(10/dt)
+#         time_steps = int(300/dt)
+
         tic = perf_counter_ns()
-        output = swsg_class.stepping_scheme(debias=True, dt=dt, method=method, time_steps=time_steps, tol=1e-11, newton_tol=1e-11, geoverse_velocities=True, collect_x_star= True, sinkhorn_divergence=True)
+        output = swsg_class.stepping_scheme(debias=True, dt=dt, method=method, time_steps=time_steps, tol=1e-8, newton_tol=1e-8, geoverse_velocities=True, collect_x_star= True, sinkhorn_divergence=False)
         toc = perf_counter_ns()
 
-        print('TIMING: ', toc-tic, f'data_store/output_{method}_{dt}_{epsilon}_{strength}.pkl')
+        print('TIMING: ', toc-tic, f'data_store/OT_{method}_{dt}_{epsilon}_{strength}.pkl')
 
-        f = open(f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}_smaller_g.pkl', 'wb')
+        f = open(f'data_store/OT_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'wb')
 
         pickle.dump(output, f)
 
