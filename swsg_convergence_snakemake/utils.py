@@ -78,7 +78,7 @@ def jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c
     mu = torch.ones_like(h_true) * d  / len(X[:, 1])
 
     no, no0 , no1  = normal_pdf(X[:,0],X[:,1],0.5,0.3,0.1,strength)  ## 0 is stationnary 
-    h_true = h_true  + no 
+    h_true = h_true  + 10*no 
     h_true = h_true.div(torch.sum(h_true)) 
     G = G + torch.stack((no0, no1), dim=1)
 
