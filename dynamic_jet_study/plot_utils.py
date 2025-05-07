@@ -12,6 +12,7 @@ import torch
 CB_COLORS = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7"]
 
 
+
 def normal_pdf(x, y, mu_x, mu_y, sigma,alpha):
     """
     Calculate the PDF of a bivariate normal distribution.
@@ -204,6 +205,173 @@ def compute_norms_and_plot(method='heun', strength=0.0001, dt=0.05, time_steps=[
     # Save and show
     plt.savefig(save_file)
     plt.show()
+    
+
+def plot_energy_conservation(data_dir='data_store', epsilon=0.02, strength=0.0, save_path='energy_conservation_for_jet.pdf'):
+    """Plot kinetic, potential, and total energy conservation for different integrators and dt values."""
+
+    # Define colorblind-friendly colors (Tol's vibrant)
+    CB_COLORS = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7"]
+    DT_VALUES = [0.4, 0.2, 0.1, 0.05]  # Time steps to test
+    LINE_STYLES = {
+        "Kinetic": "-",
+        "Potential": ":",
+        "Total Energy": "--"
+    }
+    methods = ["heun", "rk4"]
+
+    # Create figure with subplots
+    fig, axes = plt.subplots(2, 2, figsize=(15, 8), dpi=300, sharex=True)
+
+    for row, method in enumerate(methods):
+        ax1 = axes[row, 0]  # Left plot: Kinetic vs Potential
+        ax2 = ax1  # Using same axis for both kinetic & potential
+        ax3 = axes[row, 1]  # Right plot: Total Energy error
+
+        for i, dt in enumerate(DT_VALUES):
+            with open(f'{data_dir}/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
+                data = pickle.load(f)
+
+            time = np.linspace(0, 60, int(60/dt))
+            entropic = np.array(data[3][0]['terms']['d3']) + np.array(data[3][0]['terms']['d31']) + np.array(data[3][0]['terms']['d32'])
+            potential = np.array(data[3][0]['terms']['p5'])
+            kinetic = np.array(data[3][0]['dual']) - potential - entropic
+            potential -= potential[0]
+            kinetic -= kinetic[0]
+            total_dual = np.array(data[3][0]['dual']) - 0.05
+            abs_energy_error = abs(total_dual - total_dual[0]) / total_dual[0]
+
+            color = CB_COLORS[i % len(CB_COLORS)]
+
+            # Plot kinetic and potential energy
+            ax1.plot(time, kinetic, linestyle=LINE_STYLES["Kinetic"], color=color)
+            ax2.plot(time, potential, linestyle=LINE_STYLES["Potential"], color=color)
+
+            # Plot total energy error
+            ax3.semilogy(time, abs_energy_error, linestyle=LINE_STYLES["Total Energy"], color=color)
+
+        # Axis labels and titles
+        if row == 1:
+            ax1.set_xlabel("Time")
+        ax2.set_ylabel("Energy Variation")
+        ax2.set_title(f"{method.upper()} - Potential vs Kinetic Energy")
+        ax3.set_xlabel("Time")
+        ax3.set_ylabel("Energy Error (log scale)")
+        ax3.set_title(f"{method.upper()} - Normalised Energy Error")
+
+    # Legends (combined and stacked vertically)
+    custom_legend_lines = [
+        plt.Line2D([0], [0], color="black", linestyle=LINE_STYLES["Kinetic"], label="Kinetic Energy"),
+        plt.Line2D([0], [0], color="black", linestyle=LINE_STYLES["Potential"], label="Potential Energy"),
+        plt.Line2D([0], [0], color="black", linestyle=LINE_STYLES["Total Energy"], label="Abs. Energy Error"),
+    ]
+
+    color_legend_lines = [
+        plt.Line2D([0], [0], color=CB_COLORS[i], linestyle="-", label=f"dt = {DT_VALUES[i]}")
+        for i in range(len(DT_VALUES))
+    ]
+
+    # Stack both legends in one location vertically
+    fig.legend(
+        handles=custom_legend_lines + color_legend_lines,
+        loc='lower center',
+        bbox_to_anchor=(0.5, -0.02),
+        ncol=1,  # stack vertically
+        framealpha=0.5,
+        title="Legend",
+        fontsize=9
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])  # leave space for legend
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.show()
+
+    
+    import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_energy_conservation(data_dir='data_store', epsilon=0.02, strength=0.0001, save_path='energy_conservation_for_jet_pertubed.pdf'):
+    """Plot kinetic, potential, and total energy conservation for different integrators and dt values."""
+
+    # Define colorblind-friendly colors (Tol's vibrant)
+    CB_COLORS = ["#E69F00", "#56B4E9", "#009E73", "#CC79A7"]
+    DT_VALUES = [0.4, 0.2, 0.1, 0.05]  # Time steps to test
+    LINE_STYLES = {
+        "Kinetic": "-",
+        "Potential": ":",
+        "Total Energy": "--"
+    }
+    methods = ["heun", "rk4"]
+
+    # Create figure with subplots
+    fig, axes = plt.subplots(2, 2, figsize=(15, 8), dpi=300, sharex=True)
+
+    for row, method in enumerate(methods):
+        ax1 = axes[row, 0]  # Left plot: Kinetic vs Potential
+        ax2 = ax1  # Using same axis for both kinetic & potential
+        ax3 = axes[row, 1]  # Right plot: Total Energy error
+
+        for i, dt in enumerate(DT_VALUES):
+            with open(f'{data_dir}/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
+                data = pickle.load(f)
+
+            time = np.linspace(0, 60, int(60/dt))
+            entropic = np.array(data[3][0]['terms']['d3']) + np.array(data[3][0]['terms']['d31']) + np.array(data[3][0]['terms']['d32'])
+            potential = np.array(data[3][0]['terms']['p5'])
+            kinetic = np.array(data[3][0]['dual']) - potential - entropic
+            potential -= potential[0]
+            kinetic -= kinetic[0]
+            total_dual = np.array(data[3][0]['dual']) #- 0.05
+            abs_energy_error = abs(total_dual - total_dual[0]) / total_dual[0]
+
+            color = CB_COLORS[i % len(CB_COLORS)]
+
+            # Plot kinetic and potential energy
+            ax1.plot(time, kinetic, linestyle=LINE_STYLES["Kinetic"], color=color)
+            ax2.plot(time, potential, linestyle=LINE_STYLES["Potential"], color=color)
+
+            # Plot total energy error
+            ax3.semilogy(time, abs_energy_error, linestyle=LINE_STYLES["Total Energy"], color=color)
+
+        # Axis labels and titles
+        if row == 1:
+            ax1.set_xlabel("Time")
+        ax2.set_ylabel("Energy Variation")
+        ax2.set_title(f"{method.upper()}"+r" - $\mathcal{P}(h)$ vs $\mathcal{K}_{\sigma}(h)$")
+        ax3.set_xlabel("Time")
+        ax3.set_ylabel("Energy Error (log scale)")
+        ax3.set_title(f"{method.upper()} - Default Energy Conservation")
+
+    # Legends (combined and stacked vertically)
+    custom_legend_lines = [
+        plt.Line2D([0], [0], color="black", linestyle=LINE_STYLES["Kinetic"], label=r"$\mathcal{K}_{\sigma}(h)$ (Kinetic Energy)"),
+        plt.Line2D([0], [0], color="black", linestyle=LINE_STYLES["Potential"], label=r"$\mathcal{P}(h)$ (Potential Energy)"),
+        plt.Line2D([0], [0], color="black", linestyle=LINE_STYLES["Total Energy"], label="Default Energy Conservation"),
+    ]
+
+    color_legend_lines = [
+        plt.Line2D([0], [0], color=CB_COLORS[i], linestyle="-", label=f"dt = {DT_VALUES[i]}")
+        for i in range(len(DT_VALUES))
+    ]
+
+    # Stack both legends in one location vertically
+    fig.legend(
+        handles=custom_legend_lines + color_legend_lines,
+        loc='lower center',
+        bbox_to_anchor=(0.5, -0.02),
+        ncol=7,  # stack vertically
+        framealpha=0.5,
+        title="Legend",
+        fontsize=9
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])  # leave space for legend
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.show()
+
+
+
 
 
 
