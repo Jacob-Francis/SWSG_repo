@@ -19,20 +19,24 @@ from swsg_ot_algorithm import SWSGDynamcis
 
 # f = open(f'data_store/output_{method}_{dt}_{epsilon}_{lloyd}.pkl', 'wb')
 # 5e-05
-for strength in [0.0]:#, 0.0001, 5e-5]:
+for strength in [0.0001]:#, 0.0001, 5e-5]:
     # strength = 0.0
     method= 'heun'
     epsilon = 0.01
-    dt = 0.05
+    dt = 0.1
     # /home/jacob/SWSG_repo/dynamic_jet_study/output_heun_0.05_0.01_strength_0.0.pkl
-    with open(f'output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
+    # /home/jacob/SWSG_repo/dynamic_jet_study/data_store/grad_method_test_heun_0.1_0.01_0.0001.pkl
+    #output_{method}_{dt}_{epsilon}_strength_{strength}.pkl
+    with open(f'/home/jacob/SWSG_repo/dynamic_jet_study/data_store/grad_method_test_heun_0.1_0.01_0.0001.pkl', 'rb') as f:
         output = pickle.load(f)
 
-
+    suffix = '_test'
     a = 0.1
     b = 10.0
     c = 0.5
     d = 1.0
+    time_steps = int(0.5/dt)
+    steps=1
 
     def height_func(x):
         return a * torch.tanh(b * (x - c)) + d
@@ -85,7 +89,7 @@ for strength in [0.0]:#, 0.0001, 5e-5]:
     )
     alpha = torch.Tensor(height_func(X[:, 1]))
     h_true = alpha/ alpha.sum()
-    time_steps = int(60/dt)
+
 
     animation_tpye = False
 
@@ -162,7 +166,7 @@ for strength in [0.0]:#, 0.0001, 5e-5]:
 
     # Update colorbar
     cbar4.update_normal(sm)
-    animation_tpye = False
+    animation_tpye = True
     if animation_tpye:
         def update_frame(i):
             # Clear previous frames
@@ -212,8 +216,7 @@ for strength in [0.0]:#, 0.0001, 5e-5]:
             plt.tight_layout()
 
         print(time_steps)
-        time_steps=203
-        ani = animation.FuncAnimation(fig, update_frame, frames=range(1, time_steps-2, 10), blit=False)
+        ani = animation.FuncAnimation(fig, update_frame, frames=range(1, time_steps-2, steps), blit=False)
 
 
         # ani = animation.FuncAnimation(fig, function, frames=range(NUM_FRAMES), blit=False)
@@ -221,7 +224,7 @@ for strength in [0.0]:#, 0.0001, 5e-5]:
         # Save or display the animation
     #     ani.save(f'test.mp4', writer='ffmpeg', fps=5)
 
-        ani.save(f'animation_output_heun_{dt}_{epsilon}_{strength}_{method}.mp4', writer='ffmpeg', fps=5)
+        ani.save(f'animation_output_heun_{dt}_{epsilon}_{strength}_{method}'+suffix+'.mp4', writer='ffmpeg', fps=5)
     else:
 
 
@@ -322,68 +325,3 @@ for strength in [0.0]:#, 0.0001, 5e-5]:
 
 
         plt.savefig(f'figure_heun_{dt}_{epsilon}_{strength}_{method}.png', pad_inches=0.5)
-
-
-# # ##############################################################
-# import torch
-# import numpy as np
-# import matplotlib.pyplot as plt
-# from swsg_ot_algorithm import SWSGDynamcis
-# import matplotlib as mpl
-# import pickle
-
-# # The function to plot comparison across different methods (e.g. 'heun', 'rk4', etc.)
-# def plot_comparison_across_methods(methods, dt, epsilon, strengths):
-#     fig, axes = plt.subplots(len(methods), len(strengths), figsize=(20, 15), dpi=200)
-    
-#     # Loop over each method and strength for plotting
-#     for method_idx, method in enumerate(methods):
-#         for strength_idx, strength in enumerate(strengths):
-#             # Load the data for this specific method and strength combination
-#             with open(f'output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'rb') as f:
-#                 output = pickle.load(f)
-
-#             # Here you can define your model, X, alpha, etc. as you've already done earlier
-#             m1 = m2 = int(1 / epsilon)
-#             X = torch.cartesian_prod(
-#                 torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
-#                 torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
-#             )
-#             alpha = torch.Tensor(height_func(X[:, 1]))
-#             h_true = alpha / alpha.sum()
-#             time_steps = int(60 / dt)
-            
-#             # Create subplots for each method & strength combination
-#             ax = axes[method_idx, strength_idx]
-
-#             # Plot Geoverse Velocity (assuming 'output' contains the velocity info in the first element)
-#             vector = precomputed_vectors[i]
-#             sc1 = ax.scatter(output[0][:, 0, i].cpu(), output[0][:, 1, i].cpu(), c=vector.norm(dim=1), cmap='seismic', s=10, alpha=0.5)
-#             ax.quiver(output[0][:, 0, i].cpu(), output[0][:, 1, i].cpu(), vector[:, 0], vector[:, 1])
-#             ax.set_title(f'Method: {method}, Strength: {strength}')
-#             ax.set_xlabel(r'$y_1$', fontsize=12)
-#             ax.set_ylabel(r'$y_2$', fontsize=12)
-
-#     # Add colorbars and other customizations outside the main loop
-#     cbar_ax1 = fig.add_axes([0.25, 0.04, 0.25, 0.02])  # (left, bottom, width, height)
-#     cbar1 = fig.colorbar(sc1, cax=cbar_ax1, orientation='horizontal')
-#     cbar1.set_label(r'Velocity Magnitude', fontsize=12)
-
-#     # Add a global title
-#     plt.suptitle(f'Comparison across methods (dt={dt}, epsilon={epsilon})', fontsize=14, y=1.05)
-    
-#     # Adjust layout to avoid overlap
-#     plt.tight_layout()
-#     plt.show()
-
-#     # Optionally, save the figure
-#     plt.savefig(f'comparison_across_methods_{dt}_{epsilon}.png', pad_inches=0.5)
-
-# # Define methods and strengths to test
-# methods = ['euler', 'heun', 'rk4']
-# strengths = [0.0, 0.0001, 5e-5]
-# dt = 0.05
-# epsilon = 0.01
-
-# # Call the plotting function
-# plot_comparison_across_methods(methods, dt, epsilon, strengths)
