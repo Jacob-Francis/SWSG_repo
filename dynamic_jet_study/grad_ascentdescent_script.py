@@ -109,17 +109,17 @@ global device
 cuda = 0
 epsilon = 0.01
 device = f'cuda:{cuda}'
-g = 0.05
-a = 0.2
+g = 0.1
+a = 0.1
 b=10
-
+strength = 0.0001
 assert(3* np.sqrt(3) / (4*g) > a*b**2)
 
 X_xy, Y, G_xy, h_true, mu = jet_profile_initialisation(epsilon, strength=0.0001, f=1.0, g=g, a=a, b=10.0, c=0.5, d=1.0)
 
 h_true /= h_true.sum()
 method = 'heun'
-dt = 0.2
+dt = 0.1
 
 swsg_class = SWSGDynamcis(pykeops=True, cuda_device=device)
 swsg_class.parameters(ε=epsilon, f=1.0, g=g)
@@ -130,7 +130,7 @@ sigma = h_true / h_true.sum()
 
 swsg_class.densities(source_points=G_xy.detach().clone(), target_points=X_xy.detach().clone(), source_density=sigma.detach(), target_density=h_leb.detach(), cost_type='periodic', L=1.0)
 
-time_steps = int(100/dt)
+time_steps = int(2.5/dt)
 time_steps
 
 
@@ -139,19 +139,19 @@ output = swsg_class.stepping_scheme(debias=True,
                                     dt=dt,
                                     method=method,
                                     time_steps=time_steps,
-                                    tol=1e-8,
-                                    newton_tol=1e-8,
+                                    tol=1e-5,
+                                    newton_tol=1e-5,
                                     geoverse_velocities=True,
                                     collect_x_star= True,
                                     sinkhorn_divergence=True,
-                                    gradient_method=True,
+                                    gradient_updates=True,
                                     verbose=False,
                                     tau=0.5)
 toc = perf_counter_ns()
 
 print('TIMING: ', toc-tic)
 
-f = open(f'data_store/grad_method_{method}_{dt}_{epsilon}.pkl', 'wb')
+f = open(f'data_store/grad_method_test_{method}_{dt}_{epsilon}_{strength}.pkl', 'wb')
 
 pickle.dump(output, f)
 
