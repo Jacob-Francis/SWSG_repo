@@ -327,10 +327,10 @@ class SWSGSimulation:
         elif profile_type == "perturbedjet":
             temp = a * np.tanh(self.b * (x[:, 1] - c)) + d
             no, no0, no1 = normal_pdf(
-                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.0001
+                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.001
             )  ## 0 is stationnary
 
-            temp = temp + no.squeeze()/g
+            temp = temp + no.squeeze()
             return temp
         else:
             raise KeyError("Unknown profile type")
