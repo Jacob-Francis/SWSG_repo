@@ -564,7 +564,7 @@ class SWSGSimulation:
             #     None,
             # )
             method_data["h_error"]["fine_original"] = float('inf')
-            print("Oringal Se loss:", s)
+#             print("Oringal Se loss:", s)
 
             print("nope")
             # This can always be tensorised
@@ -580,7 +580,7 @@ class SWSGSimulation:
             #     None,
             # )
             method_data["h_error"]["fine_W_error"] = float('inf')
-            print("h error", s)
+#             print("h error", s)
 
         # Phase space error metric
         if which == 4:
