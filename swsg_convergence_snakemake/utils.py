@@ -16,7 +16,7 @@ from lambertw import _residual as _lambw_res
 from geomloss import SamplesLoss
 from tqdm import tqdm  # Import tqdm for the progress bar
 
-def normal_pdf(x, y, mu_x, mu_y, sigma,strength=0.0001):
+def normal_pdf(x, y, mu_x, mu_y, sigma,strength=0.001):
     """
     Calculate the PDF of a bivariate normal distribution.
     """
@@ -78,9 +78,9 @@ def jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c
     mu = torch.ones_like(h_true) * d  / len(X[:, 1])
 
     no, no0 , no1  = normal_pdf(X[:,0],X[:,1],0.5,0.3,0.1,strength)  ## 0 is stationnary 
-    h_true = h_true  + 10*no 
+    h_true = h_true  + no 
     h_true = h_true.div(torch.sum(h_true)) 
-    G = G + torch.stack((no0, no1), dim=1)
+    G = G + 10*torch.stack((no0, no1), dim=1)
 
     return X, Y, G, h_true, mu
 
@@ -579,7 +579,7 @@ def initialisation(
             device, dtype, epsilon, f, g, a, b, c, d, tol=tol
         )
     elif profile_type == 'perturbedjet':
-        X, Y, G, h_true, mu = jet_profile_initialisation(epsilon, strength=0.0001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
+        X, Y, G, h_true, mu = jet_profile_initialisation(epsilon, strength=0.001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
 
     return X, Y, G, h_true
 
