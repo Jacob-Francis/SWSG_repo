@@ -370,6 +370,81 @@ def plot_energy_conservation(data_dir='data_store', epsilon=0.02, strength=0.000
     plt.savefig(save_path, bbox_inches='tight')
     plt.show()
 
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import pickle
+
+# Assuming these are predefined somewhere in your code
+CB_COLORS = ['#377eb8', '#e41a1c', '#4daf4a', '#984ea3']
+LINE_STYLES = ['-', '--', '-.', ':']
+
+def plot_ageostrophic_relative_error(epsilons=0.02, 
+                                     dt_values=[0.4, 0.2, 0.1, 0.05],
+                                     save_file='ageostrophic_002eps.pdf',
+                                     average='median'):
+    strengths = [0.0, 0.0001]
+    method = 'rk2'  # or 'rk4' if you want to make this a parameter
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5), dpi=200)
+
+    for ax_idx, strength in enumerate(strengths):
+        ax = axes[ax_idx]
+
+        for i, dt in enumerate(dt_values):
+            rel_error = []
+
+            time_steps = int(60 / dt)
+
+            # Load data
+            with open(f'data_store/output_{method}_{dt}_{epsilons}_strength_{strength}.pkl', 'rb') as f:
+                output = pickle.load(f)
+
+            # Compute precomputed vectors
+            precomputed_x_tilde_vectors = [
+                periodic_vec_reconstruction(output[2][:, :, i-1],
+                                            output[2][:, :, i+1],
+                                            2*dt, L=1.0).cpu()
+                for i in range(1, time_steps - 1)
+            ]
+            precomputed_vectors = [
+                periodic_g_x_vel(output[0][:, :, i],
+                                 output[2][:, :, i],
+                                 1, L=1.0, periodic=True).cpu()
+                for i in range(1, time_steps - 1)
+            ]
+
+            for k in range(time_steps - 2 - 1):
+                if average == 'median':
+                    err = ((precomputed_x_tilde_vectors[k] - precomputed_vectors[k]).norm(p=2)
+                           / precomputed_vectors[k].norm(p=2)).numpy()
+                else:
+                    raise ValueError("Only 'median' averaging is currently implemented.")
+
+                rel_error.append(err)
+
+            # Time axis
+            time_axis = np.linspace(0, 60, len(rel_error))
+
+            # Assign color and linestyle
+            color = CB_COLORS[i % len(CB_COLORS)]
+            linestyle = LINE_STYLES[i % len(LINE_STYLES)]
+
+            # Plot
+            ax.semilogy(time_axis, rel_error, linestyle=linestyle, color=color, label=f"dt={dt}")
+
+        ax.set_xlabel('Time')
+        ax.set_title(f'Strength = {strength:.5f}')
+        ax.grid(True, which="both", linestyle="--", alpha=0.6)
+        ax.legend(loc='upper right')
+
+        if ax_idx == 0:
+            ax.set_ylabel("Relative Size (log scale)")
+
+    plt.suptitle(f"Relative Size of Ageostrophic vs Geostrophic Velocity ({method.upper()})")
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.savefig(save_file)
+    plt.show()
 
 
 

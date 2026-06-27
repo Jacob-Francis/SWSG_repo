@@ -69,6 +69,7 @@ def jet_profile_initialisation(
     # Calculate nabla P: x + f^2 * g * partial h
     G_i = X_j + f**-2 * g * a * b * (1 - np.tanh(b * (X_j - 0.5)) ** 2)
 
+    print('MAX', (f**-2 * g * a * b * (1 - np.tanh(b * (X_j - 0.5)) ** 2)).max())
     # Tile the 1D into a 2D profile
     X = torch.cartesian_prod(
         torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
@@ -91,9 +92,15 @@ def jet_profile_initialisation(
     h_true = h_true.div(torch.sum(h_true))
     G = G + torch.stack((no0, no1), dim=1)
 
+    # Estimate Rosbys number
+    print((no0 + G[:, 0] - X[:, 0]).max())
+    print(no1.max(), no0.max())
+
     return X, Y, G, h_true, mu
 
+# jet_profile_initialisation(0.001, 0.0001)
 
+# assert(0)
 def Sinkhorn_Divergence_balanced(
     X,
     α,
@@ -409,83 +416,118 @@ def compute_norms_and_plot(
     plt.savefig("nest_height_interp_multiple_T.pdf")
     plt.show()
 
-
 def plot_nest_heights(
-    title, epsilons, file_prefix, Times, save_filename, slope=1, return_s=False
+    file_prefix,
+    Times,
+    title,
+    epsilons,
+    slope=1.5,
+    save_filename="test.png",
+    return_s=False,
 ):
-    """
-    Plots the perturbed jet comparison against neighboring resolution.
 
-    Parameters:
-    - title (str): The title of the plot.
-    - epsilons (list): List of epsilon values.
-    - file_prefix (str): Prefix for the data files.
-    - Times (list): List of time steps (e.g., ["T5", "T10"]).
-    - save_filename (str): Name of the file to save the plot.
-    - slope (float): Slope for the trend line.
-    - return_s (bool): Whether to return the loaded data.
-    """
+    if isinstance(file_prefix, str):
+        file_prefix = [file_prefix]
 
-    s = {}
+    # Data structure: s[prefix][time] = values
+    s = {prefix: {} for prefix in file_prefix}
 
-    # Load data for different time steps
-    for T in Times:
-        with open(f"pickle_folder/{file_prefix}_{T}.pkl", "rb") as f:
-            s[T] = pickle.load(f)
+    # Load all data
+    for prefix in file_prefix:
+        for T in Times:
+            fname = f"pickle_folder/{prefix}_{T}.pkl"
+            try:
+                with open(fname, "rb") as f:
+                    s[prefix][T] = pickle.load(f)
+            except FileNotFoundError:
+                print(f"[Warning] Missing file: {fname}")
 
+    # Plotting setup
     plt.figure(figsize=(7, 5), dpi=200)
-
-    # Define styles
     time_styles = {
         "T0": {"marker": "x"},
         "T5": {"marker": "o"},
         "T10": {"marker": "s"},
-    }  # Square  # Circle
+    }
+    colors = ["#E69F00", "#56B4E9", "#009E73", "#0072B2", "#D55E00"]  # Extend if needed
+    linestyles = ["-.", "--", ":", "-"]
+    labels={'nest_sigma':r'$S_{\epsilon}$',
+            'ot_approx_sigma':r'$OT_{\epsilon}$ with $\nabla \psi_{\epsilon}^S$'}
+    markers = ['o', 'x']
 
-    colors = ["#E69F00", "#56B4E9", "#009E73"]  # Colorblind-safe colors
-    linestyles = ["dashdot", "dashdot", "dashdot"]  # Different line styles for norms
+    # Plot each curve: one per prefix+time
+    for p_idx, prefix in enumerate(file_prefix):
+        for t_idx, T in enumerate(Times):
+            if T not in s[prefix]:
+                continue
+            s_values = np.array(s[prefix][T])
+            if any(np.array(s_values) < 0):
+                print(f"[Warning] Negative values found for {prefix}, {T}: {s_values[s_values < 0]}")
 
-    # Plot each dataset
-    for i, key in enumerate(s.keys()):
-        s_ = np.array(s[key])
-        if any(s_ < 0):
-            print(s_[s_ < 0])
-        sqrt_s = np.sqrt(s_)
+            sqrt_s = np.sqrt(s_values)
 
-        plt.loglog(
-            epsilons,
-            sqrt_s,
-            marker=time_styles[key]["marker"],
-            markerfacecolor="none",  # No fill
-            linestyle=linestyles[i % len(linestyles)],  # Cycle through styles
-            color=colors[i % len(colors)],  # Cycle through colors
-            label=f'time={key.split("T")[1]}',
-            markersize=10,
-        )
+            plt.loglog(
+                epsilons,
+                sqrt_s,
+                marker=markers[p_idx],  #time_styles[T]["marker"],
+                markerfacecolor="none",
+                linestyle=linestyles[t_idx],
+                color=colors[t_idx],
+                label=f"{labels[prefix]}, time={T[1:]}",  # Remove "T" from label
+                markersize=8,
+            )
 
-    # Define trend line with slope 1
-    ref_index = len(epsilons) // 2  # Use middle epsilon as reference
-    C = sqrt_s[ref_index] / epsilons[ref_index] ** slope  # Compute scaling factor
+    # Reference trend line
+    ref_index = len(epsilons) // 2
+    last_sqrt_s = sqrt_s if 'sqrt_s' in locals() else np.ones(len(epsilons))
+    C = last_sqrt_s[ref_index] / epsilons[ref_index] ** slope
     trend_line = C * np.array(epsilons) ** slope
+
     plt.loglog(
-        epsilons, trend_line, "--", color="black", label=f"Trend (slope={slope})"
+        epsilons, trend_line, "--", color="black", label=f"Reference slope={slope}", alpha=0.5
     )
 
+    # Ticks and labels
     plt.xticks(epsilons, [f"{eps:.6f}" for eps in epsilons])
-
-    plt.legend(loc="best", fontsize=10)
-
-    # Labels and formatting
-    plt.title(title)
     plt.xlabel(r"$\varepsilon$ = 1/$\sqrt{N}$", fontsize=14)
     plt.ylabel(r"$\sqrt{S_{0.01}}$", fontsize=14)
+    plt.title(title, fontsize=14)
     plt.grid(True, which="both", linestyle="--", linewidth=0.6)
+    
+    from matplotlib.lines import Line2D
 
-    # Save plot
+    legend_elements = [
+        # Markers for time steps
+        *[Line2D(
+            [0],
+            [0],
+            marker=markers[i],
+            color="w",
+            markerfacecolor="none",
+            markeredgecolor="black",
+            markersize=8,
+            label=labels[prefix],
+        ) for i, prefix in enumerate(file_prefix)],
+        # Line styles for norms
+        Line2D([0], [0], color="#E69F00", linestyle="-.", label="time=0"),
+        Line2D([0], [0], color="#56B4E9", linestyle="--", label="time=5 "),
+        Line2D([0], [0], color="#009E73", linestyle=":", label="time=10 "),
+        # Trend line
+        Line2D(
+            [0], [0], color="black", linestyle="--", label=f"Trend (slope={slope})"
+        ),
+    ]
+
+    plt.legend(handles=legend_elements, loc="best", fontsize=10, ncols=2)
+
+    # Save + show
+    plt.tight_layout()
     plt.savefig(save_filename)
     plt.show()
 
     if return_s:
+        return s
+
         return s
 
 
@@ -538,10 +580,13 @@ def merged_plots(
 
     # Add NN-based lines for l1, l2, linf
     times_lab = [k for k in time_markers.keys()]
-    for i, key in enumerate(["99", "199"]):
-        with open(f"pickle_folder/nn_height_heun_0.05_{key}.pkl", "rb") as f:
-            lp_norm = pickle.load(f)
-
+    for i, key in enumerate(["0", "99", "199"]):
+        if file_prefix =='nest_heights':
+            with open(f"pickle_folder/output_nn_height_heun_0.05_{key}.pkl", "rb") as f:
+                lp_norm = pickle.load(f)
+        else:
+            with open(f"pickle_folder/OT_nn_height_heun_0.05_{key}.pkl", "rb") as f:
+                lp_norm = pickle.load(f)
         # Plot L1, L2, and Linf norms
         for norm, style in norm_styles.items():
             plt.loglog(

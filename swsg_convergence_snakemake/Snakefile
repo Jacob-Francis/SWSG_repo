@@ -33,7 +33,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
 sim.generate_case({wildcards.epsilon}, output_dir="data_store")
-'> {wildcards.epsilon}{wildcards.profile}.out 2> {wildcards.epsilon}{wildcards.profile}.err
+'> {wildcards.epsilon}{wildcards.profile}.out 2>& 1
         """
 
 rule run_simulation:
@@ -52,7 +52,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
-'> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
+'> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>& 1
         """
 
 # Indepeden tof suffix, but needs to be re-ran for shallowjet
@@ -69,7 +69,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=1, profile="{params.profile}", d={params.d})
 sim.compute_density_symmetric_potential(output_dir="data_store")
-'> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
+'> dense_{wildcards.profile}.out 2>& 1
         """
 
 rule run_4Ddense_sym:
@@ -85,7 +85,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d})
 sim.compute_4D_density_symmetric_potential(output_dir="data_store")
-'> dense_{wildcards.profile}.out 2> dense_{wildcards.profile}.err
+'> dense_{wildcards.profile}.out 2>& 1
         """
 
 rule compute_l_errors:
@@ -105,7 +105,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.compute_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", output_dir="data_store")
-' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>& 1
         """
 
 rule compute_w2_errors:
@@ -129,7 +129,7 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
-' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.err
+' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>& 1
         """
 
 rule combine_w2_errors:
@@ -148,5 +148,5 @@ from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.combine_dicts("{wildcards.method}", {wildcards.epsilon}, output_dir="data_store")
-' >> combine.out 2>> combine.err
+' >> combine.out 2>& 1
         """
