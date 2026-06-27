@@ -379,6 +379,8 @@ class SWSGSimulation:
         ##############################################################
         X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d, full=True)
 
+        print('Dense shape check', X.shape, h_density.shape)
+        
         # compute symmetric OT problem (balanced) and  sav full class.
         dense_symmetric_dict = compute_dense_symmetric_potential(
             X, h_density, X, h_density, self.device
