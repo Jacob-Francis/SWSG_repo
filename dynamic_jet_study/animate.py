@@ -27,7 +27,7 @@ for strength in [0.0001]:#, 0.0001, 5e-5]:
     # /home/jacob/SWSG_repo/dynamic_jet_study/output_heun_0.05_0.01_strength_0.0.pkl
     # /home/jacob/SWSG_repo/dynamic_jet_study/data_store/grad_method_test_heun_0.1_0.01_0.0001.pkl
     #output_{method}_{dt}_{epsilon}_strength_{strength}.pkl
-    with open(f'/home/jacob/SWSG_repo/dynamic_jet_study/data_store/grad_method_test_heun_0.1_0.01_0.0001.pkl', 'rb') as f:
+    with open(f'data_store/grad_method_test_heun_0.1_0.01_0.0001.pkl', 'rb') as f:
         output = pickle.load(f)
 
     suffix = '_test'
@@ -35,8 +35,8 @@ for strength in [0.0001]:#, 0.0001, 5e-5]:
     b = 10.0
     c = 0.5
     d = 1.0
-    time_steps = int(0.5/dt)
-    steps=1
+    time_steps = int(80/dt)
+    steps = 5
 
     def height_func(x):
         return a * torch.tanh(b * (x - c)) + d
@@ -184,7 +184,7 @@ for strength in [0.0001]:#, 0.0001, 5e-5]:
             # Top-right plot: Universe Jet Height
             ax2.scatter(X[:, 0].cpu(), X[:, 1].cpu(), n1 * n2 * output[1][:, :, i], c=n1 * n2 * output[1][:, :, i], cmap='viridis')
             ax2.scatter(output[0][:, 0, i].cpu(), output[0][:, 1, i].cpu(), 0 * output[0][:, 0, i].cpu(), c=output[0][:, 0, 0].cpu(), s=0.5, cmap='rainbow')
-            ax2.set(title=f"Universe Jet Height, \n Linf = {torch.linalg.norm(n1 * n2 * output[1][:, :, i].view(-1,) - h_true.view(-1), ord=float('inf'))}")
+            ax2.set(title=f"Universe Jet Height, \n Linf = {torch.linalg.norm(n1 * output[1][:, :, i].view(-1,) -  len(output[1][:, :, i].view(-1,)) * h_true.view(-1), ord=float('inf'))}")
             ax2.azim = -15
 
             vector = precomputed_x_tilde_vectors[i]
