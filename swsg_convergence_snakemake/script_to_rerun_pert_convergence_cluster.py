@@ -19,7 +19,7 @@ for epsilon in epsilons:
 
     Xres, _, _, _, _ = jet_profile_initialisation(epsilon, strength=0.0001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
 
-    with open(f"/home/jacob/SWSG_repo/swsg_convergence_snakemake/data_store/data_store/four_epsilon_{epsilon}_profile_perturbedjet_results_nolloyd.pkl", "rb") as f:
+    with open(f"data_store/four_epsilon_{epsilon}_profile_perturbedjet_results_nolloyd.pkl", "rb") as f:
     # with open(f"/home/jjf817/SWSG_repo/swsg_convergence_snakemake/data_store/four_epsilon_{epsilon}_profile_perturbedjet_results_nolloyd.pkl", "rb") as f:
         four3125 = pickle.load(f)
 
@@ -46,7 +46,7 @@ for epsilon in epsilons:
     save_dict[epsilon]['dual_cost'] = sum(dual_cost).item()
 
     # temp save
-    with open(f"/home/jacob/SWSG_repo/swsg_convergence_snakemake/data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
+    with open(f"data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
         pickle.dump(save_dict, f)
 
     # debiasing term 1
@@ -72,7 +72,7 @@ for epsilon in epsilons:
     save_dict[epsilon]['dual_cost11'] = sum(dual_cost11).item()
 
     # temp save
-    with open(f"/home/jacob/SWSG_repo/swsg_convergence_snakemake/data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
+    with open(f"data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
         pickle.dump(save_dict, f)
 
 # Debiasing term 3: separate
@@ -97,7 +97,7 @@ dual_cost22 = uotclass2.dual_cost(force_type='pykeops')
 save_dict['dual_cost22'] = sum(dual_cost22).item()
 
 # temp save
-with open(f"/home/jacob/SWSG_repo/swsg_convergence_snakemake/data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
+with open(f"data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
     pickle.dump(save_dict, f)
 
 # plotting
@@ -115,4 +115,4 @@ plt.ylabel('Error')
 plt.title('Convergence of Perturbed Jet Profile')
 plt.grid(True, which="both", ls="--")
 
-plt.savefig(f"/home/jacob/SWSG_repo/swsg_convergence_snakemake/four_pertjet_rerun_conv_625.png", dpi=300)
+plt.savefig(f"data_store/four_pertjet_rerun_conv_625.png", dpi=300)
