@@ -6,8 +6,9 @@ from utils import initialisation, jet_profile_initialisation
 
 
 # open the files
-epsilons = [0.05, 0.025, 0.0125] #, 0.00625]
-fine_epsilon = 0.00625
+epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
+fine_epsilon = 0.003125/2
+
 cuda_device = 'cuda:7'
 
 save_dict = {}
@@ -32,7 +33,7 @@ for epsilon in epsilons:
     uotclass.densities(Xres, X, approx_height, h_true)
     
     f_update, g_update, i_sup = uotclass.sinkhorn_algorithm(
-        tol=1e-6,
+        tol=1e-11,
         verbose=True,
         aprox="balanced",
         convergence_repeats=2,
@@ -46,7 +47,7 @@ for epsilon in epsilons:
     save_dict[epsilon]['dual_cost'] = sum(dual_cost).item()
 
     # temp save
-    with open(f"data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
+    with open(f"data_store/four_pertjet_rerun_conv_00156.pkl", "wb") as f:
         pickle.dump(save_dict, f)
 
     # debiasing term 1
@@ -58,7 +59,7 @@ for epsilon in epsilons:
     uotclass1.densities(Xres, Xres, approx_height, approx_height)
 
     f_update, g_update, i_sup = uotclass1.sinkhorn_algorithm(
-        tol=1e-6,
+        tol=1e-11,
         verbose=True,
         aprox="balanced",
         convergence_repeats=2,
@@ -72,7 +73,7 @@ for epsilon in epsilons:
     save_dict[epsilon]['dual_cost11'] = sum(dual_cost11).item()
 
     # temp save
-    with open(f"data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
+    with open(f"data_store/four_pertjet_rerun_conv_00156.pkl", "wb") as f:
         pickle.dump(save_dict, f)
 
 # Debiasing term 3: separate
@@ -83,7 +84,7 @@ uotclass2.parameters(epsilon=0.01)
 uotclass2.densities(X, X, h_true, h_true)
 
 f_update, g_update, i_sup = uotclass2.sinkhorn_algorithm(
-    tol=1e-6,
+    tol=1e-11,
     verbose=True,
     aprox="balanced",
     convergence_repeats=2,
@@ -97,7 +98,7 @@ dual_cost22 = uotclass2.dual_cost(force_type='pykeops')
 save_dict['dual_cost22'] = sum(dual_cost22).item()
 
 # temp save
-with open(f"data_store/four_pertjet_rerun_conv_625.pkl", "wb") as f:
+with open(f"data_store/four_pertjet_rerun_conv_00156.pkl", "wb") as f:
     pickle.dump(save_dict, f)
 
 # plotting
@@ -115,4 +116,4 @@ plt.ylabel('Error')
 plt.title('Convergence of Perturbed Jet Profile')
 plt.grid(True, which="both", ls="--")
 
-plt.savefig(f"data_store/four_pertjet_rerun_conv_625.png", dpi=300)
+plt.savefig(f"data_store/four_pertjet_rerun_conv_00156.png", dpi=300)
