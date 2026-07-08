@@ -7,7 +7,6 @@ from utils import initialisation, jet_profile_initialisation
 
 # open the files
 epsilons = [0.05, 0.025, 0.0125, 0.00625, 0.003125]
-fine_epsilon = 0.003125/2
 
 cuda_device = 'cuda:6'
 
@@ -16,7 +15,7 @@ save_dict = {}
 for epsilon in epsilons:
     save_dict[epsilon] = {}
     n = int(1/epsilon)
-    X, Y, G, h_true, mu = jet_profile_initialisation(fine_epsilon, strength=0.001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
+    X, Y, G, h_true, mu = jet_profile_initialisation(epsilon, strength=0.001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
 
     with open(f"data_store/four_epsilon_{epsilon}_profile_perturbedjet_results_nolloyd.pkl", "rb") as f:
     # with open(f"/home/jjf817/SWSG_repo/swsg_convergence_snakemake/data_store/four_epsilon_{epsilon}_profile_perturbedjet_results_nolloyd.pkl", "rb") as f:
