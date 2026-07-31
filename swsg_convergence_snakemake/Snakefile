@@ -7,6 +7,21 @@ suffixs = ['nolloyd'] #'lloyd',
 
 # To Do add which 4 
 
+onstart:
+    import subprocess
+    result = subprocess.run(
+        ["python3", "-c", "import torch; print(torch.__version__)"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            "Environment check failed: 'torch' is not importable by the "
+            "python3 that snakemake will invoke in its shell subprocesses.\n"
+            f"stderr:\n{result.stderr}\n"
+            "Fix: activate the correct environment before launching snakemake, "
+            "or hardcode the env's python3 path in the rules."
+        )
+    print(f"[env check] torch OK: {result.stdout.strip()}")
 
 rule all:
     input:
