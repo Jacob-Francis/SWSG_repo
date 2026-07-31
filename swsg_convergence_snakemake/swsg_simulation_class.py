@@ -356,7 +356,8 @@ class SWSGSimulation:
         ).view(-1, 1)
         # h_density /= h_density.sum()
         print('Dense sum check', h_density.sum(), 'd', d)
-
+        assert(torch.isclose(h_density / h_density.sum(), h_density.sum()))
+        
         if full:
             return X, h_density
         else:
