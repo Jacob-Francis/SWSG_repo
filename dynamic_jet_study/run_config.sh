@@ -7,7 +7,8 @@
 #nohup python3 sim_study.py 6 0.01 0.0001 1 > mid100_strong.out 2> mid100_strong.err &
 #nohup python3 sim_study.py 5 0.01 0.00005 1 > mid100_mid.out 2> mid100_mis.err &
 
-nohup python3 sim_study.py 3 0.0025 0.00005 1 > hifi.out 2> hifi.err &
+# nohup python3 sim_study.py 3 0.0025 0.00005 1 > hifi.out 2> hifi.err &
+nohup python3 sim_study.py 0 0.1 0.0 1 > test.out 2> test.err &
 
 # nohup python3 sim_study.py 5 0.005 0 > nolloydmid.out 2> nolloydmid.err
 # parser.add_argument("cuda", type=int, help="cuda index")

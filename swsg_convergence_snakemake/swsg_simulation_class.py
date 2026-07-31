@@ -327,10 +327,10 @@ class SWSGSimulation:
         elif profile_type == "perturbedjet":
             temp = a * np.tanh(self.b * (x[:, 1] - c)) + d
             no, no0, no1 = normal_pdf(
-                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.0001
+                x[:, 0], x[:, 1], 0.5, 0.3, 0.1, strength=0.001
             )  ## 0 is stationnary
 
-            temp = temp + no.squeeze()/g
+            temp = temp + no.squeeze()
             return temp
         else:
             raise KeyError("Unknown profile type")
@@ -379,6 +379,8 @@ class SWSGSimulation:
         ##############################################################
         X, h_density = self.compute_dense_samples(a=0.1, c=0.5, d=self.d, full=True)
 
+        print('Dense shape check', X.shape, h_density.shape)
+        
         # compute symmetric OT problem (balanced) and  sav full class.
         dense_symmetric_dict = compute_dense_symmetric_potential(
             X, h_density, X, h_density, self.device
@@ -564,7 +566,7 @@ class SWSGSimulation:
             #     None,
             # )
             method_data["h_error"]["fine_original"] = float('inf')
-            print("Oringal Se loss:", s)
+#             print("Oringal Se loss:", s)
 
             print("nope")
             # This can always be tensorised
@@ -580,7 +582,7 @@ class SWSGSimulation:
             #     None,
             # )
             method_data["h_error"]["fine_W_error"] = float('inf')
-            print("h error", s)
+#             print("h error", s)
 
         # Phase space error metric
         if which == 4:
