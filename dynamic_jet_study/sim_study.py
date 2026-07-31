@@ -144,12 +144,12 @@ for method in methods:
 #         time_steps = int(300/dt)
 
         tic = perf_counter_ns()
-        output = swsg_class.stepping_scheme(debias=True, dt=dt, method=method, time_steps=time_steps, tol=1e-8, newton_tol=1e-8, geoverse_velocities=True, collect_x_star= True, sinkhorn_divergence=False)
+        output = swsg_class.stepping_scheme(debias=True, dt=dt, method=method, time_steps=time_steps, tol=1e-8, newton_tol=1e-8, geoverse_velocities=True, collect_x_star= True, sinkhorn_divergence=True)
         toc = perf_counter_ns()
 
-        print('TIMING: ', toc-tic, f'data_store/OT_{method}_{dt}_{epsilon}_{strength}.pkl')
+        print('TIMING: ', toc-tic, f'data_store/output_{method}_{dt}_{epsilon}_{strength}.pkl')
 
-        f = open(f'data_store/OT_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'wb')
+        f = open(f'data_store/output_{method}_{dt}_{epsilon}_strength_{strength}.pkl', 'wb')
 
         pickle.dump(output, f)
 
