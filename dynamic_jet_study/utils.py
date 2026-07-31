@@ -538,9 +538,12 @@ def merged_plots(
     Times=["T5", "T10"],
     save_filename="pertjet_all_height_against_finesolution.png",
     slope=1.5,
+    n_dependent=False,
 ):
 
     s = {}
+    N_list = [np.ceil(1/e**2) for e in epsilons]
+    xvariable = epsilons if not n_dependent else N_list
 
     # Load data for different time steps (T5, T10)
     for T in Times:
@@ -566,7 +569,7 @@ def merged_plots(
     for key in s.keys():
         sqrt_s = np.sqrt(np.array(s[key]))
         plt.loglog(
-            epsilons,
+            xvariable,
             sqrt_s,
             marker=time_markers[key],  # Different markers for T5 and T10
             linestyle="dashdot",
@@ -590,7 +593,7 @@ def merged_plots(
         # Plot L1, L2, and Linf norms
         for norm, style in norm_styles.items():
             plt.loglog(
-                epsilons,
+                xvariable,
                 lp_norm[norm],
                 marker=time_markers[times_lab[i]],
                 linestyle=style["linestyle"],
@@ -600,19 +603,29 @@ def merged_plots(
                 markeredgewidth=1.5,
             )
 
-    # Trend line with slope 1
-    ref_index = len(epsilons) // 2
-    C = sqrt_s[ref_index] / epsilons[ref_index] ** slope
-    trend_line = C * np.array(epsilons) ** slope
+    # Trend line
+    ref_index = len(xvariable) // 2
+    C = sqrt_s[ref_index] / xvariable[ref_index] ** slope
+    trend_line = C * np.array(xvariable) ** slope
     plt.loglog(
+<<<<<<< HEAD
+        xvariable, trend_line, "--", color="black", label=f"Trend (slope={slope})"
+=======
         epsilons, trend_line, "--", color="black", label=f"Trend (slope={slope})", alpha=0.5
+>>>>>>> eb48c992e48249beee2a97d338447bfb8f29e88e
     )
 
-    plt.xticks(epsilons, [f"{eps:.6f}" for eps in epsilons])
+
+    labels = [f"{eps:.6f}" for eps in xvariable] if n_dependent else [f"{int(eps):.0g}" for eps in xvariable]
+    if not n_dependent:
+        plt.xticks(xvariable, labels)
 
     # Labels and formatting
     plt.title(title)
-    plt.xlabel(r"$\varepsilon$ = 1/$\sqrt{N}$", fontsize=14)
+    if n_dependent:
+        plt.xlabel(r'$N = \epsilon^{-2}$')
+    else:
+        plt.xlabel(r'$\epsilon=1/\sqrt{N}$')
     plt.ylabel(r"Error", fontsize=14)
     plt.grid(True, which="both", linestyle="--", linewidth=0.6)
 
