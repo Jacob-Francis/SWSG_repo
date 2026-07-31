@@ -30,6 +30,11 @@ class SWSGSimulation:
             self.dtype = torch.float64
         self.profile = profile
         self.d = d
+
+        if profile == "perturbedjet":
+            self.d = 1 - (1.0010 - 1)
+            print('Perturbed jet profile, setting d to', self.d)
+    
         self.b = b
         if self.profile == "shallowjet":
             self.b = 5
@@ -59,7 +64,7 @@ class SWSGSimulation:
             )  ## 0 is stationnary
             temp = temp + torch.stack((no0, no1), dim=1)
 
-            return -g0* temp / (1 + 0.001)
+            return -g0* temp # / (1 + 0.001)
         #######################################################################################################################
 
     def generate_case(self, epsilon, output_dir):
@@ -136,7 +141,7 @@ class SWSGSimulation:
                 cuda=self.device.index,
                 tol=self.tol,
             )
-            h_true /= h_true.sum()
+            # h_true /= h_true.sum()
 
         return X, Y, G, h_true
 
@@ -349,7 +354,8 @@ class SWSGSimulation:
         h_density = self.height_func(
             X, a=a, b=self.b, c=c, d=d, profile_type=self.profile
         ).view(-1, 1)
-        h_density /= h_density.sum()
+        # h_density /= h_density.sum()
+        print('Dense sum check', h_density.sum(), 'd', d)
 
         if full:
             return X, h_density
@@ -372,6 +378,9 @@ class SWSGSimulation:
         X, Y, G, h_density = self.lloyd_or_not(None, dense_epsilon)
 
         # Create 4D mesh:
+
+        assert torch.isclose(h_density / h_density.sum(), h_density.sum())
+    
         return self.mesh4D(G, X), h_density / h_density.sum()
 
     def compute_density_symmetric_potential(self, output_dir):

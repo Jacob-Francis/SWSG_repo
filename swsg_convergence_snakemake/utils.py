@@ -79,8 +79,11 @@ def jet_profile_initialisation(epsilon, strength, f=1.0, g=0.1, a=0.1, b=10.0, c
 
     no, no0 , no1  = normal_pdf(X[:,0],X[:,1],0.5,0.3,0.1,strength)  ## 0 is stationnary 
     h_true = h_true  + no 
-    h_true = h_true.div(torch.sum(h_true)) 
+    # h_true = h_true.div(torch.sum(h_true)) 
+
     G = G + (g / f**2) * torch.stack((no0, no1), dim=1)
+
+    print("Perturbed jet sum h_true", h_true.sum()*epsilon**2)
 
     return X, Y, G, h_true, mu
 
@@ -579,7 +582,7 @@ def initialisation(
             device, dtype, epsilon, f, g, a, b, c, d, tol=tol
         )
     elif profile_type == 'perturbedjet':
-        X, Y, G, h_true, mu = jet_profile_initialisation(epsilon, strength=0.001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=1.0)
+        X, Y, G, h_true, mu = jet_profile_initialisation(epsilon, strength=0.001, f=1.0, g=0.1, a=0.1, b=10.0, c=0.5, d=d)
 
     return X, Y, G, h_true
 
@@ -612,7 +615,9 @@ def swsg_class_generate(
     if lloyd:
         sigma = torch.ones_like(G[:, 0]) * d / len(G[:, 0])
     else:
-        sigma = h_true / h_true.sum()
+        sigma = h_true / h_true.sum() # lebegues
+
+    assert torch.isclose(sigma.sum(), h_leb.sum()), f'Density sums do not match, sums: {sigma.sum()} vs {h_leb.sum()}'
 
     swsg_class.densities(
         source_points=G.detach().cpu(),
