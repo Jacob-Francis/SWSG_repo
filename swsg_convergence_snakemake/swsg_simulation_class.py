@@ -356,7 +356,7 @@ class SWSGSimulation:
         ).view(-1, 1)
         # h_density /= h_density.sum()
         print('Dense sum check', h_density.sum(), 'd', d)
-        assert torch.isclose(h_density.sum(), m1 * m2, atol=1e-6), f"Density not normalised correctly {h_density.sum()}, {m1 * m2} "
+        assert np.isclose(h_density.sum().numpy(), m1 * m2, atol=1e-6), f"Density not normalised correctly {h_density.sum()}, {m1 * m2} "
         
         if full:
             return X, h_density / h_density.sum()
@@ -378,7 +378,7 @@ class SWSGSimulation:
     
         # Initialise the regular denisty - don't need to save as we can rerun anything
         X, Y, G, h_density = self.lloyd_or_not(None, dense_epsilon)
-        assert torch.isclose(h_density.sum(), m1 * m2, atol=1e-6), f"Density not normalised correctly {h_density.sum()}, {m1 * m2} "
+        assert np.isclose(h_density.sum().numpy(), m1 * m2, atol=1e-6), f"Density not normalised correctly {h_density.sum()}, {m1 * m2} "
         
 
         # Create 4D mesh:    
