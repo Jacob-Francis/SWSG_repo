@@ -378,7 +378,6 @@ class SWSGSimulation:
     
         # Initialise the regular denisty - don't need to save as we can rerun anything
         X, Y, G, h_density = self.lloyd_or_not(None, dense_epsilon)
-        print('Dense sum check', h_density.sum(), 'd', d)
         assert torch.isclose(h_density.sum(), m1 * m2, atol=1e-6), f"Density not normalised correctly {h_density.sum()}, {m1 * m2} "
         
 
