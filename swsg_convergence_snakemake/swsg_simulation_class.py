@@ -356,15 +356,15 @@ class SWSGSimulation:
         ).view(-1, 1)
         # h_density /= h_density.sum()
         print('Dense sum check', h_density.sum(), 'd', d)
-        assert(torch.isclose(h_density / h_density.sum(), h_density.sum()))
+        assert torch.isclose(h_density.sum(), m1 * m2, atol=1e-6), f"Density not normalised correctly {h_density.sum()}, {m1 * m2} "
         
         if full:
-            return X, h_density
+            return X, h_density / h_density.sum()
         else:
             return (
                 torch.linspace(1 / (2 * m2), 1 - 1 / (2 * m2), m2),
                 torch.linspace(1 / (2 * m1), 1 - 1 / (2 * m1), m1),
-            ), h_density
+            ), h_density / h_density.sum() 
 
     def mesh4D(self, G, X):
         return torch.hstack((G, periodic_g_x_vel(G, X, 1, periodic=False)))
@@ -374,14 +374,15 @@ class SWSGSimulation:
     ):
 
         dense_epsilon = 0.0015625
-
+        m1 = m2 = int(1 / dense_epsilon)
+    
         # Initialise the regular denisty - don't need to save as we can rerun anything
         X, Y, G, h_density = self.lloyd_or_not(None, dense_epsilon)
+        print('Dense sum check', h_density.sum(), 'd', d)
+        assert torch.isclose(h_density.sum(), m1 * m2, atol=1e-6), f"Density not normalised correctly {h_density.sum()}, {m1 * m2} "
+        
 
-        # Create 4D mesh:
-
-        assert torch.isclose(h_density / h_density.sum(), h_density.sum())
-    
+        # Create 4D mesh:    
         return self.mesh4D(G, X), h_density / h_density.sum()
 
     def compute_density_symmetric_potential(self, output_dir):
@@ -518,7 +519,6 @@ class SWSGSimulation:
             dense_points = _torch_numpy_process(X_dense)
             N_dense = len(X_dense)
             n_dense = int(np.sqrt(N_dense))
-            print("here")
             if self.lloyd:
                 mesh = _torch_numpy_process(Y)
                 dense = dense_points
