@@ -27,7 +27,7 @@ rule run_lloyd:
         d=1,
     shell:
         """
-        /usr/bin/python3 -c '
+        /home/jjf817/uotvenv/bin/python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
@@ -46,7 +46,7 @@ rule run_simulation:
         suff="_{suffix}"
     shell:
         """
-        /usr/bin/python3 -c '
+        /home/jjf817/uotvenv/bin/python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
@@ -63,7 +63,7 @@ rule run_dense_sym:
         d=1,
     shell:
         """
-        /usr/bin/python3 -c '
+        /home/jjf817/uotvenv/bin/python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=1, profile="{params.profile}", d={params.d})
@@ -79,7 +79,7 @@ rule run_4Ddense_sym:
         d=1,
     shell:
         """
-        /usr/bin/python3 -c '
+        /home/jjf817/uotvenv/bin/python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d})
@@ -99,7 +99,7 @@ rule compute_l_errors:
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl"
     shell:
         """
-        /usr/bin/python3 -c '
+        /home/jjf817/uotvenv/bin/python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(profile="{params.profile}", d={params.d}, suff="{params.suff}")
@@ -123,7 +123,7 @@ rule compute_w2_errors:
         suff="_{suffix}"
     shell:
         """
-        /usr/bin/python3 -c '
+        /home/jjf817/uotvenv/bin/python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
@@ -142,7 +142,7 @@ rule combine_w2_errors:
         suff="_{suffix}"
     shell:
         """
-        /usr/bin/python3 -c '
+        /home/jjf817/uotvenv/bin/python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d}, suff="{params.suff}")
