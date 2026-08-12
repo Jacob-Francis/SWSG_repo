@@ -27,10 +27,11 @@ rule run_lloyd:
         d=1,
     shell:
         """
-        /home/jjf817/uotvenv/bin/python3 -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
+import random
 
-sim = SWSGSimulation(cuda=0, profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=random.randint(3, 6), profile="{params.profile}", d={params.d})
 sim.generate_case({wildcards.epsilon}, output_dir="data_store")
 '> {wildcards.epsilon}{wildcards.profile}.out 2>& 1
         """
@@ -46,10 +47,11 @@ rule run_simulation:
         suff="_{suffix}"
     shell:
         """
-        /home/jjf817/uotvenv/bin/python3 -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
+import random
 
-sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim = SWSGSimulation(cuda=random.randint(3, 6), profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.run_simulation("{wildcards.method}", {wildcards.epsilon}, "{input.lloyd_file}", output_dir="data_store")
 '> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>& 1
         """
@@ -63,10 +65,11 @@ rule run_dense_sym:
         d=1,
     shell:
         """
-        /home/jjf817/uotvenv/bin/python3 -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
+import random
 
-sim = SWSGSimulation(cuda=1, profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=random.randint(3, 6), profile="{params.profile}", d={params.d})
 sim.compute_density_symmetric_potential(output_dir="data_store")
 '> dense_{wildcards.profile}.out 2>& 1
         """
@@ -79,10 +82,11 @@ rule run_4Ddense_sym:
         d=1,
     shell:
         """
-        /home/jjf817/uotvenv/bin/python3 -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
+import random
 
-sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d})
+sim = SWSGSimulation(cuda=random.randint(3, 6), profile="{params.profile}", d={params.d})
 sim.compute_4D_density_symmetric_potential(output_dir="data_store")
 '> dense_{wildcards.profile}.out 2>& 1
         """
@@ -99,7 +103,7 @@ rule compute_l_errors:
         errors_file="data_store/{method}_epsilon_{epsilon}_profile_{profile}_lnormerrors_{suffix}.pkl"
     shell:
         """
-        /home/jjf817/uotvenv/bin/python3 -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(profile="{params.profile}", d={params.d}, suff="{params.suff}")
@@ -123,10 +127,11 @@ rule compute_w2_errors:
         suff="_{suffix}"
     shell:
         """
-        /home/jjf817/uotvenv/bin/python3 -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
+import random
 
-sim = SWSGSimulation(cuda=int(ord("{params.profile}"[0])%4), profile="{params.profile}", d={params.d}, suff="{params.suff}")
+sim = SWSGSimulation(cuda=random.randint(3, 6), profile="{params.profile}", d={params.d}, suff="{params.suff}")
 sim.compute_W2_errors("{wildcards.method}", {wildcards.epsilon}, "{input.results_file}", "{input.lloyd_file}", "{input.errors_file}", output_dir="data_store",which=int({params.wild}))
 ' >> {wildcards.method}{wildcards.epsilon}{wildcards.profile}{wildcards.suffix}.out 2>& 1
         """
@@ -142,7 +147,7 @@ rule combine_w2_errors:
         suff="_{suffix}"
     shell:
         """
-        /home/jjf817/uotvenv/bin/python3 -c '
+        python3 -c '
 from swsg_simulation_class import SWSGSimulation
 
 sim = SWSGSimulation(cuda=None, profile="{params.profile}", d={params.d}, suff="{params.suff}")
